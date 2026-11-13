@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e13">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PhoneV · Inyectora interactiva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg0:#0b0e13; --bg1:#141a23;
+    --panel:rgba(17,22,30,.86); --line:rgba(255,255,255,.09);
+    --txt:#e9edf2; --mut:#9aa6b5; --acc:#f2c230; --acc2:#ff9d1c; --blue:#4da3ff;
+    --ok:#5fd394; --bad:#ff6b5e; --warn:#ffb23f;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,#1b2330 0%,var(--bg0) 70%);color:var(--txt);font-family:var(--sans);font-size:16px;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+
+  /* encabezado */
+  #top{position:fixed;left:20px;top:16px;right:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;pointer-events:none;z-index:5}
+  #top .t1{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}
+  #top .t2{font-size:18px;font-weight:600;margin-top:2px}
+  #speed{font-family:var(--mono);font-size:14px;color:var(--mut);padding:8px 12px;border-radius:10px;background:rgba(0,0,0,.25);border:1px solid var(--line)}
+  #speed b{color:var(--acc)}
+
+  /* tarjeta del paso */
+  #stepCard{position:fixed;left:20px;top:78px;width:360px;padding:18px 20px 18px;z-index:6}
+  #stepCard .kicker{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:700}
+  #stepCard h2{font-size:24px;line-height:1.15;margin:8px 0 10px;font-weight:700;display:flex;gap:12px;align-items:center}
+  #stepCard h2 .n{flex:none;width:40px;height:40px;border-radius:12px;background:var(--acc);color:#1a1404;display:grid;place-items:center;font-family:var(--mono);font-size:20px}
+  #stepCard p{font-size:16px;line-height:1.45;color:#d3d9e1}
+  #dots{display:flex;gap:6px;margin-top:14px}
+  #dots i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);transition:background .3s}
+  #dots i.on{background:var(--acc)}
+  #dots i.done{background:rgba(242,194,48,.45)}
+  .warnbox{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(255,107,94,.12);border:1px solid rgba(255,107,94,.45);color:#ffd2cd;font-size:16px;line-height:1.4}
+  .warnbox b{color:var(--bad)}
+  .yn{display:flex;gap:10px;margin-top:14px}
+  .yn button{flex:1;min-height:52px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:18px;font-weight:700}
+  .yn button.si.sel{background:var(--ok);color:#06210f;border-color:transparent}
+  .yn button.no.sel{background:var(--bad);color:#2a0705;border-color:transparent}
+  .klass{margin-top:12px;padding:14px;border-radius:12px;font-size:17px;line-height:1.4;font-weight:600}
+
+  /* barra principal */
+  #bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);width:max-content;display:flex;gap:8px;padding:8px;z-index:8;max-width:calc(100% - 24px);flex-wrap:wrap;justify-content:center}
+  #bar button{min-height:56px;min-width:56px;padding:0 18px;border-radius:12px;font-size:16px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border:1px solid transparent;transition:background .2s,color .2s}
+  #bar button svg{width:22px;height:22px;flex:none}
+  #bar button:active{transform:scale(.97)}
+  #bar button.on{background:var(--acc);color:#1a1404}
+
+  /* barra de paso a paso */
+  #stepBar{position:fixed;left:50%;bottom:98px;transform:translateX(-50%);width:min(860px,calc(100% - 24px));padding:12px;z-index:8}
+  #routes{display:flex;gap:6px;margin-bottom:10px}
+  #routes button{flex:1;min-height:48px;border-radius:10px;font-size:16px;font-weight:600;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+  #routes button.on{background:rgba(242,194,48,.16);border-color:var(--acc);color:var(--acc)}
+  #stepRow{display:flex;gap:8px;align-items:center}
+  #stepNums{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+  #stepNums button{width:46px;height:46px;border-radius:50%;font-family:var(--mono);font-size:17px;font-weight:600;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  #stepNums button.done{background:rgba(242,194,48,.18);color:var(--acc)}
+  #stepNums button.on{background:var(--acc);color:#1a1404;border-color:transparent}
+  .navb{min-height:48px;padding:0 16px;border-radius:10px;font-size:16px;font-weight:700;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  .navb.prim{background:var(--acc);color:#1a1404;border-color:transparent}
+
+  /* ficha */
+  #ficha{position:fixed;right:20px;top:78px;width:340px;padding:18px 20px 20px;z-index:7;max-height:calc(100vh - 190px);overflow-y:auto}
+  #ficha .hd{display:flex;gap:12px;align-items:center;padding-right:44px}
+  #ficha .num{flex:none;width:40px;height:40px;border-radius:50%;background:var(--blue);color:#06172b;font-family:var(--mono);font-weight:600;font-size:18px;display:grid;place-items:center}
+  #ficha h3{font-size:21px;line-height:1.2}
+  #ficha dl{margin-top:14px;display:grid;gap:10px}
+  #ficha dt{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600}
+  #ficha dd{font-size:16px;line-height:1.4;margin-top:2px}
+  #ficha dd.dato{color:#ffe08a}
+  .close{position:absolute;right:10px;top:10px;width:44px;height:44px;border-radius:12px;font-size:24px;line-height:1;color:var(--mut);background:rgba(255,255,255,.05)}
+
+  /* ajustar */
+  #ajustar{position:fixed;right:20px;top:78px;width:360px;padding:18px 20px 20px;z-index:7;max-height:calc(100vh - 190px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #ajustar h3{font-size:21px}
+  #ajustar .sub{font-size:15px;color:var(--mut);margin-top:4px;line-height:1.35}
+  .sl{margin-top:10px}
+  .sl .row{display:flex;justify-content:space-between;align-items:baseline}
+  .sl label{font-size:16px;font-weight:600}
+  .sl output{font-family:var(--mono);font-size:18px;color:var(--acc)}
+  .sl .ref{font-size:14px;color:var(--mut);margin-top:2px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;touch-action:pan-x}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--acc) var(--p,50%),rgba(255,255,255,.14) var(--p,50%))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;border-radius:50%;background:#fff;margin-top:-11px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:rgba(255,255,255,.14)}
+  input[type=range]::-moz-range-progress{height:8px;border-radius:4px;background:var(--acc)}
+  input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:#fff;border:0}
+  #btnInyectar{width:100%;min-height:58px;margin-top:16px;border-radius:12px;background:var(--acc);color:#1a1404;font-size:18px;font-weight:700;letter-spacing:.06em}
+  #btnInyectar:disabled{opacity:.5}
+  #btnReset{width:100%;min-height:44px;margin-top:8px;border-radius:10px;font-size:15px;color:var(--mut);background:rgba(255,255,255,.04)}
+  #resultado{margin-top:14px;padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.2)}
+  #resultado .rt{font-size:19px;font-weight:700;display:flex;gap:8px;align-items:center}
+  #resultado .rt i{width:12px;height:12px;border-radius:50%;flex:none}
+  #resultado p{font-size:16px;line-height:1.4;margin-top:8px;color:#d3d9e1}
+  #resultado p.mine{color:#ffe08a}
+  .disc{font-size:13px;color:var(--mut);margin-top:12px;line-height:1.35}
+
+  /* etiquetas */
+  #labels{position:fixed;inset:0;pointer-events:none;z-index:4}
+  .lab{position:absolute;left:0;top:0;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;opacity:0;transition:opacity .25s;will-change:transform}
+  .lab.show{opacity:1}
+  .lab .pill{pointer-events:auto;display:flex;align-items:center;gap:7px;padding:5px 11px 5px 5px;border-radius:999px;background:rgba(12,16,22,.9);border:1px solid rgba(255,255,255,.16);font-size:16px;font-weight:600;white-space:nowrap;min-height:34px}
+  .lab .pill b{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#1a1404;font-family:var(--mono);font-size:14px;display:grid;place-items:center}
+  .lab .stem{width:2px;height:22px;background:rgba(255,255,255,.55)}
+  .lab .dot{width:9px;height:9px;border-radius:50%;background:#fff;margin-top:-1px;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+  .lab.hl .pill{border-color:var(--blue);box-shadow:0 0 0 2px rgba(77,163,255,.35)}
+  .lab.hl .pill b{background:var(--blue);color:#06172b}
+
+  /* resultados */
+  #results{position:fixed;inset:0;z-index:20;background:rgba(5,8,12,.6);display:grid;place-items:center;padding:20px}
+  #results .box{width:min(980px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:26px 28px;position:relative;-webkit-overflow-scrolling:touch}
+  #results h2{font-size:26px}
+  #results .lead{color:var(--mut);margin-top:6px;font-size:16px;line-height:1.4;max-width:720px}
+  .tests{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+  .tcard{border:1px solid var(--line);border-radius:14px;padding:16px;background:rgba(255,255,255,.03)}
+  .tcard .tk{font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--acc)}
+  .tcard h4{font-size:18px;margin-top:6px;line-height:1.25}
+  .tcard .big{font-family:var(--mono);font-size:34px;font-weight:600;margin-top:10px}
+  .tcard .big small{font-family:var(--sans);font-size:15px;color:var(--mut);font-weight:500;margin-left:6px}
+  .stack{display:flex;height:14px;border-radius:7px;overflow:hidden;margin-top:10px;background:rgba(255,255,255,.08)}
+  .stack i{display:block;height:100%}
+  .legend{display:grid;gap:5px;margin-top:10px;font-size:15px;color:#d3d9e1}
+  .legend span{display:flex;gap:8px;align-items:center}
+  .legend span::before{content:"";width:11px;height:11px;border-radius:3px;background:var(--c);flex:none}
+  .tcard .fail{margin-top:12px;font-size:15px;color:#ffc2bb;line-height:1.35;border-top:1px solid var(--line);padding-top:10px}
+  .costs{margin-top:24px;display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:start}
+  .costs h3{font-size:19px}
+  .cbar{margin-top:12px}
+  .cbar .lbl{display:flex;justify-content:space-between;font-size:16px}
+  .cbar .lbl b{font-family:var(--mono)}
+  .cbar .trk{height:22px;border-radius:6px;background:rgba(255,255,255,.07);margin-top:6px;overflow:hidden}
+  .cbar .trk i{display:block;height:100%;border-radius:6px}
+  .reco{border:1px solid rgba(242,194,48,.4);background:rgba(242,194,48,.08);border-radius:14px;padding:16px;font-size:16px;line-height:1.45}
+  .reco b{color:var(--acc)}
+
+  /* inicio */
+  #start{position:fixed;inset:0;z-index:30;display:grid;place-items:center;text-align:center;padding:30px;
+    background:radial-gradient(90% 70% at 50% 40%,rgba(30,40,56,.92),rgba(8,10,14,.97));transition:opacity .6s}
+  #start.hide{opacity:0;pointer-events:none}
+  #start .uni{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);font-weight:600}
+  #start h1{font-size:clamp(28px,4.2vw,46px);line-height:1.12;max-width:900px;margin:18px auto 0;font-weight:700}
+  #start h1 em{font-style:normal;color:var(--acc)}
+  #start .who{margin-top:18px;font-size:19px;color:#cfd6df}
+  #start .go{margin:44px auto 0;display:inline-flex;align-items:center;gap:12px;padding:18px 34px;border-radius:999px;background:var(--acc);color:#1a1404;font-size:20px;font-weight:700;letter-spacing:.04em;animation:pulse 2.2s ease-in-out infinite}
+  #start .hint{margin-top:22px;font-size:15px;color:var(--mut)}
+  .medal-ic{width:120px;height:150px;margin:0 auto 6px;display:block}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(242,194,48,.5)}50%{box-shadow:0 0 0 18px rgba(242,194,48,0)}}
+
+  #err{position:fixed;inset:0;z-index:40;display:grid;place-items:center;text-align:center;padding:30px;background:var(--bg0);font-size:19px;line-height:1.5}
+  [hidden]{display:none!important}
+
+  @media (max-width:760px){
+    #bar button span{display:none}
+    #bar button{padding:0 14px}
+  }
+  @media (max-width:900px){
+    #stepCard{width:calc(100% - 40px);top:70px}
+    #ficha,#ajustar{left:20px;right:20px;width:auto;top:auto;bottom:170px;max-height:46vh;overflow:auto}
+    .tests{grid-template-columns:1fr}
+    .costs{grid-template-columns:1fr}
+    #bar button{padding:0 13px;font-size:15px}
+  }
+  /* navegación de secciones */
+  #secnav{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto}
+  #secnav button{min-height:48px;padding:0 12px;border-radius:12px;font-size:14px;font-weight:700;letter-spacing:.03em;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  #secnav button svg{width:20px;height:20px;flex:none}
+  #secnav button.on{background:var(--acc);color:#1a1404;border-color:transparent}
+  #slowBadge{position:absolute;right:14px;top:14px;font-size:12px;font-weight:700;letter-spacing:.08em;color:#1a1404;background:var(--acc);padding:4px 8px;border-radius:8px}
+
+  /* vitrina */
+  #muestra{position:fixed;right:20px;top:78px;width:380px;padding:18px 20px 20px;z-index:7;max-height:calc(100vh - 190px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #muestra h3{font-size:21px;padding-right:44px;line-height:1.2}
+  .lbl2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:700;margin:16px 0 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips button{min-height:44px;padding:0 13px;border-radius:10px;font-size:15px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  .chips button.on{background:rgba(242,194,48,.16);border-color:var(--acc);color:var(--acc)}
+  #muInfo{margin-top:12px;font-size:16px;line-height:1.45;color:#d3d9e1}
+  #muInfo b{color:var(--txt)}
+  #muInfo .dims{margin-top:8px;font-family:var(--mono);font-size:14px;color:#ffe08a;line-height:1.5}
+  .linkb{margin-top:10px;min-height:44px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:700;background:rgba(77,163,255,.14);border:1px solid rgba(77,163,255,.5);color:#cfe5ff}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .thumbs button{aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line);padding:0;background:#000}
+  .thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+
+  /* visor de fotos */
+  #lightbox{position:fixed;inset:0;z-index:50;background:rgba(3,5,8,.92);display:grid;grid-template-rows:1fr auto;padding:20px 20px 16px}
+  #lightbox img{max-width:100%;max-height:100%;object-fit:contain;margin:auto;display:block;border-radius:10px;min-height:0}
+  #lightbox .imgwrap{min-height:0;display:flex}
+  #lightbox .cap{text-align:center;font-size:17px;line-height:1.45;color:#dfe5ec;max-width:820px;margin:14px auto 0}
+  #lightbox .nav{display:flex;gap:10px;justify-content:center;margin-top:12px}
+
+  /* superposiciones (planos y guía) */
+  .overlay{position:fixed;inset:0;z-index:20;background:rgba(5,8,12,.66);display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:16px}
+  .overlay .box{min-width:0;max-width:100%}
+  .overlay .box{width:min(1120px,100%);height:calc(100vh - 32px);display:flex;flex-direction:column;position:relative;padding:20px 22px}
+  .overlay h2{font-size:24px;padding-right:56px}
+  .overlay .lead{color:var(--mut);margin-top:4px;font-size:15px;line-height:1.4}
+  #plTabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  #plTabs button{min-height:46px;padding:0 12px;border-radius:10px;font-size:15px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:left}
+  #plTabs button b{font-family:var(--mono);color:var(--acc);margin-right:6px}
+  #plTabs button.on{background:rgba(242,194,48,.16);border-color:var(--acc)}
+  #plView{flex:1;min-height:0;margin-top:12px;border-radius:12px;background:#f4f4f2;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;position:relative}
+  #plView img{display:block;width:100%;height:auto;margin:0 auto;user-select:none;-webkit-user-drag:none}
+  #plView.fit img{width:auto;height:100%;max-width:100%;object-fit:contain}
+  #plBar{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+  #plBar .cap{flex:1;min-width:220px;font-size:15px;color:#d3d9e1;line-height:1.35}
+  #guia .cols{flex:1;min-height:0;display:grid;grid-template-columns:250px 1fr;gap:16px;margin-top:14px}
+  #gNav{display:flex;flex-direction:column;gap:6px;overflow:auto}
+  #gNav button{min-height:48px;padding:8px 12px;border-radius:10px;font-size:15px;font-weight:600;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--line);line-height:1.25}
+  #gNav button b{font-family:var(--mono);color:var(--acc);margin-right:8px}
+  #gNav button.on{background:rgba(242,194,48,.14);border-color:var(--acc)}
+  #gBody{overflow:auto;-webkit-overflow-scrolling:touch;padding-right:6px;font-size:16px;line-height:1.5;color:#d9dfe7}
+  #gBody section{display:none} #gBody section.on{display:block}
+  #gBody h3{font-size:22px;color:var(--txt);margin-bottom:8px}
+  #gBody h4{font-size:17px;color:var(--acc);margin:16px 0 6px}
+  #gBody p{margin:6px 0}
+  #gBody ol,#gBody ul{margin:6px 0 6px 22px} #gBody li{margin:5px 0}
+  #gBody li b{color:var(--txt)}
+  #gBody table{width:100%;border-collapse:collapse;margin:8px 0;font-size:15px}
+  #gBody th,#gBody td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left;vertical-align:top}
+  #gBody th{color:var(--mut);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  #gBody .warn{margin:12px 0;padding:12px 14px;border-radius:12px;background:rgba(255,107,94,.12);border:1px solid rgba(255,107,94,.45);color:#ffd2cd}
+  #gBody .warn b{color:var(--bad)}
+  #gBody .flow{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  #gBody .flow span{padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:15px}
+  #gBody .flow span b{color:var(--acc);font-family:var(--mono);margin-right:6px}
+  #gBody .src{margin-top:18px;font-size:13px;color:var(--mut)}
+  @media (max-width:900px){
+    #guia .cols{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+    #gNav{flex-direction:row;overflow-x:auto;overflow-y:hidden}
+    #gNav button{flex:none}
+    #muestra{left:20px;right:20px;width:auto;top:auto;bottom:170px;max-height:44vh}
+  }
+  #flow{margin-top:12px;display:flex;flex-direction:column;align-items:stretch}
+  .fnode{position:relative}
+  .fnode>button{width:100%;min-height:52px;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:16px;font-weight:600;text-align:left;line-height:1.3}
+  .fnode.term>button{border-radius:999px;background:rgba(242,194,48,.08);border-color:rgba(242,194,48,.4)}
+  .fnode.dec>button{background:rgba(77,163,255,.07);border-color:rgba(77,163,255,.35)}
+  .fnode .ic{flex:none;width:32px;height:32px;display:grid;place-items:center;font-family:var(--mono);font-size:15px;font-weight:600;border-radius:9px;background:var(--acc);color:#1a1404}
+  .fnode.dec .ic{background:var(--blue);color:#06172b;border-radius:4px;transform:rotate(45deg);width:26px;height:26px;margin:3px}
+  .fnode.dec .ic span{transform:rotate(-45deg)}
+  .fnode.term .ic{border-radius:50%}
+  .fnode .sec{margin-left:auto;font-size:13px;color:var(--mut);font-weight:500;white-space:nowrap}
+  .fnode.open>button{border-color:var(--acc);background:rgba(242,194,48,.12)}
+  .fdet{display:none;margin:8px 0 2px 18px;padding:12px 14px;border-left:3px solid var(--acc);background:rgba(255,255,255,.03);border-radius:0 12px 12px 0}
+  .fnode.open .fdet{display:block}
+  .fdet ul{margin:4px 0 4px 20px}
+  .fdet .loop{margin-top:8px;font-size:15px;color:#cfe5ff}
+  .fdet .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .fdet .acts .linkb{margin-top:0}
+  .farrow{width:2px;height:14px;background:rgba(255,255,255,.25);margin:2px auto}
+  /* guía completa */
+  #gdTabs{display:flex;gap:6px;overflow-x:auto;margin-top:12px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  #gdTabs button{flex:none;min-height:44px;padding:0 12px;border-radius:10px;font-size:15px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  #gdTabs button.on{background:rgba(242,194,48,.16);border-color:var(--acc)}
+  #gdView{flex:1;min-height:0;margin-top:10px;border-radius:12px;background:#f4f4f2;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  #gdView img{display:block;margin:0 auto;width:100%;height:auto}
+  #gdView.fit img{width:auto;height:100%;max-width:100%;object-fit:contain}
+  #gdBar{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  #gdBar .pg{flex:1;text-align:center;font-family:var(--mono);font-size:16px;color:#d3d9e1;min-width:140px}
+  @media (max-height:700px){ #stepCard{top:66px;padding:14px 16px} #stepCard h2{font-size:20px} }
+  /* ================= PhoneV ================= */
+  :root{--tabH:64px;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
+  canvas#c{position:fixed;left:0;top:0;right:auto;bottom:auto}
+  #top{left:0;right:0;top:0;padding:calc(8px + var(--sat)) 12px 8px;gap:8px;align-items:center;flex-wrap:nowrap;background:linear-gradient(rgba(11,14,19,.85),rgba(11,14,19,0));pointer-events:none}
+  #top .brand{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+  #top .brand b{font-size:16px} #top .brand span{font-size:14px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #top .navb{pointer-events:auto;min-height:48px;flex:none}
+  #fsLink{position:fixed;top:calc(8px + var(--sat));right:10px;z-index:9;min-height:48px;display:flex;align-items:center;padding:0 14px;border-radius:12px;background:var(--acc);color:#1a1404;font-weight:700;font-size:16px;text-decoration:none}
+  #fsLink[hidden]{display:none}
+  /* hoja inferior */
+  #sheet{position:fixed;left:0;right:0;bottom:var(--tabH);z-index:8;background:rgba(17,22,30,.97);border-top:1px solid var(--line);border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 30px rgba(0,0,0,.4);transition:height .25s ease}
+  #handle{flex:none;height:30px;display:grid;place-items:center;cursor:grab;touch-action:none}
+  #handle i{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.3)}
+  #sheetBody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 14px 16px;display:flex;flex-direction:column;gap:12px}
+  #sheetBody>.panel{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;width:auto!important;max-width:none!important;max-height:none!important;overflow:visible!important;background:rgba(255,255,255,.03);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:14px}
+  #stepCard{padding:14px 16px}
+  #stepCard h2{font-size:20px;margin:6px 0 8px}
+  #stepCard h2 .n{width:36px;height:36px;font-size:18px}
+  #stepCard .kicker{font-size:14px}
+  #slowBadge{font-size:13px}
+  #bar{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:8px!important}
+  #bar button{min-height:52px;padding:0 12px;justify-content:center;font-size:16px}
+  #bar button span{display:inline!important}
+  #stepBar{padding:10px!important}
+  #routes{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #routes button{flex:none;padding:0 12px;font-size:16px;min-height:48px}
+  #stepRow{flex-wrap:wrap}
+  #stepNums{order:-1;flex-basis:100%;justify-content:flex-start;margin-bottom:8px}
+  #stepNums button{width:48px;height:48px}
+  #stepRow .navb{flex:1;min-height:52px;font-size:16px}
+  #ficha,#ajustar,#muestra{padding:16px!important}
+  #ficha h3{font-size:19px}
+  .chips button,.linkb,.navb,#routes button{font-size:16px}
+  .lbl2,#ficha dt,.sl .ref,.disc{font-size:14px}
+  input[type=range]{height:48px}
+  .lab .pill{font-size:16px}
+  /* barra de pestañas */
+  #tabs{position:fixed;left:0;right:0;bottom:0;z-index:26;height:calc(var(--tabH) + var(--sab));padding-bottom:var(--sab);display:grid;grid-template-columns:repeat(5,1fr);background:#0e1218;border-top:1px solid var(--line)}
+  #tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px;font-weight:600;color:var(--mut);min-height:48px}
+  #tabs button svg{width:24px;height:24px}
+  #tabs button.on{color:var(--acc)}
+  /* superposiciones encima de la barra de pestañas */
+  .overlay,#results{bottom:calc(var(--tabH) + var(--sab))!important;padding:8px!important;padding-top:calc(8px + var(--sat))!important}
+  .overlay .box{height:100%!important;padding:16px 14px!important}
+  #results .box{max-height:100%!important;padding:18px 16px!important}
+  .overlay h2,#results h2{font-size:21px}
+  .overlay .lead{font-size:15px}
+  #plCap{font-size:15px}
+  #lightbox{padding-top:calc(16px + var(--sat))}
+  #start{padding-bottom:calc(30px + var(--sab))}
+  #err button{margin-top:18px}
+  .tests{grid-template-columns:1fr!important} .costs{grid-template-columns:1fr!important}
+  #guia .cols{grid-template-columns:1fr!important;grid-template-rows:auto 1fr}
+  #gNav{flex-direction:row!important;overflow-x:auto;overflow-y:hidden}
+  #gNav button{flex:none}
+  /* horizontal: hoja como panel lateral */
+  body.land #sheet{left:auto;right:0;top:0;border-radius:20px 0 0 0;border-top:0;border-left:1px solid var(--line);transition:none}
+  body.land #handle{display:none}
+  body.land #sheetBody{padding-top:calc(10px + var(--sat))}
+  body.land #top .brand span{display:none}
+  #bar[hidden]{display:none!important}
+  #stepRow .navb{white-space:nowrap;padding:0 8px}
+  #start{display:flex!important;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #start>div{margin:auto}
+  @media (max-height:520px){ #start .medal-ic{display:none} #start h1{font-size:24px;margin-top:10px} #start .go{margin-top:18px} #start .who{margin-top:10px;font-size:17px} }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+
+<header id="top">
+  <div class="brand"><b>Inyectora interactiva</b><span>Molde híbrido aluminio–resina · UVG</span></div>
+  <div style="display:flex;gap:8px;pointer-events:auto"><button id="fsB" class="navb" hidden aria-label="Pantalla completa">⛶</button><button id="homeB" class="navb">Inicio</button></div>
+</header>
+<a id="fsLink" href="#" target="_blank" rel="noopener" hidden>Abrir en pantalla completa ↗</a>
+<div id="sheet"><div id="handle" aria-label="Mover panel"><i></i></div><div id="sheetBody"></div></div>
+
+<section id="stepCard" class="panel">
+  <span id="slowBadge" hidden>CÁMARA LENTA</span>
+  <div class="kicker" id="kicker">Ciclo de inyección</div>
+  <h2><span class="n" id="stepN">1</span><span id="stepT">Carga del material</span></h2>
+  <p id="stepP"></p>
+  <div id="stepExtra"></div>
+  <div id="dots"></div>
+</section>
+
+<aside id="ficha" class="panel" hidden>
+  <button class="close" id="fichaClose" aria-label="Cerrar">×</button>
+  <div class="hd"><div class="num" id="fNum">1</div><h3 id="fName"></h3></div>
+  <dl id="fBody"></dl>
+</aside>
+
+<aside id="ajustar" class="panel" hidden>
+  <button class="close" id="ajClose" aria-label="Cerrar">×</button>
+  <h3>Ajusta la máquina</h3>
+  <div class="sub">Empieza con los valores finales de mi prueba 1. Cambia uno y pulsa Inyectar.</div>
+  <div class="sl"><div class="row"><label for="sT">Temperatura del barril</label><output id="oT"></output></div>
+    <input type="range" id="sT" min="130" max="260" step="5" value="200"><div class="ref">Prueba 1: 200 °C · máximo de mi guía con Ultra White: 200 °C</div></div>
+  <div class="sl"><div class="row"><label for="sP">Presión de inyección</label><output id="oP"></output></div>
+    <input type="range" id="sP" min="30" max="220" step="5" value="170"><div class="ref">Prueba 1: 170 bar</div></div>
+  <div class="sl"><div class="row"><label for="sC">Tiempo de ciclo</label><output id="oC"></output></div>
+    <input type="range" id="sC" min="40" max="110" step="1" value="81"><div class="ref">Prueba 1: 81 s (incluye el enfriamiento)</div></div>
+  <button id="btnInyectar">INYECTAR</button>
+  <button id="btnReset">Volver a los valores de la prueba 1</button>
+  <div id="resultado" hidden></div>
+  <div class="disc">Modelo educativo simplificado: las reglas son cualitativas y se basan en mis pruebas, no en una simulación de flujo.</div>
+</aside>
+
+<div id="stepBar" class="panel" hidden>
+  <div id="routes">
+    <button data-r="ciclo">1 · Ciclo de inyección</button>
+    <button data-r="montaje">2 · Montaje del molde</button>
+    <button data-r="inspeccion">3 · Inspección de la medalla</button>
+  </div>
+  <div id="stepRow">
+    <button class="navb" id="prevB">◀ Anterior</button>
+    <div id="stepNums"></div>
+    <button class="navb" id="nextB">Siguiente ▶</button>
+    <button class="navb prim" id="playAllB">▶ Todo</button>
+  </div>
+</div>
+
+<nav id="bar" class="panel">
+  <button id="bCortar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.6 7.6 20 18M8.6 16.4 20 6"/></svg><span>CORTAR</span></button>
+  <button id="bDesarmar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>DESARMAR</span></button>
+  <button id="bPaso" hidden></button>
+  <button id="bLenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg><span>CÁMARA LENTA</span></button>
+  <button id="bAjustar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>AJUSTAR</span></button>
+  <button id="bRes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>RESULTADOS</span></button>
+</nav>
+<nav id="tabs">
+  <button data-tab="maq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="9" width="20" height="8" rx="2"/><path d="M6 9V5h4v4M14 13h4"/></svg>Máquina</button>
+  <button data-tab="paso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h3M4 12h3M4 18h3M10 6h10M10 12h10M10 18h10"/></svg>Paso a paso</button>
+  <button data-tab="muestra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="14" r="7"/><circle cx="12" cy="5" r="2.5"/></svg>Muestra</button>
+  <button data-tab="planos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Planos</button>
+  <button data-tab="guia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg>Guía</button>
+</nav>
+
+<div id="results" hidden>
+  <div class="box panel">
+    <button class="close" id="resClose" aria-label="Cerrar">×</button>
+    <h2>Mis resultados</h2>
+    <p class="lead">Tres pruebas con LDPE en la inyectora APSX-PIM de la universidad, cada una con un inserto nuevo montado en la misma base de aluminio.</p>
+    <div class="tests">
+      <div class="tcard">
+        <div class="tk">Prueba 1</div>
+        <h4>Resina Sculpt Ultra White · voladizo cilíndrico</h4>
+        <div class="big">53<small>piezas extraíbles</small></div>
+        <div class="stack"><i style="width:5.66%;background:var(--ok)"></i><i style="width:86.79%;background:var(--warn)"></i><i style="width:7.55%;background:#7d8794"></i></div>
+        <div class="legend"><span style="--c:var(--ok)">3 funcionales completas</span><span style="--c:var(--warn)">46 sin agujero (falló el voladizo en la muestra 8)</span><span style="--c:#7d8794">4 incompletas por falta de llenado</span></div>
+        <div class="fail">Falla estructural total en el ciclo 63: el LDPE escapó por las fracturas hasta los tornillos.</div>
+      </div>
+      <div class="tcard">
+        <div class="tk">Prueba 2</div>
+        <h4>Resina transparente · voladizo en arco</h4>
+        <div class="big">9<small>piezas extraíbles</small></div>
+        <div class="stack"><i style="width:15.09%;background:var(--ok)"></i><i style="width:1.89%;background:#c58cff"></i></div>
+        <div class="legend"><span style="--c:var(--ok)">8 funcionales completas, todas con agujero</span><span style="--c:#c58cff">1 con letras ilegibles (se sacó antes de enfriar)</span></div>
+        <div class="fail">Falla del inserto en el ciclo 20; la pieza no pudo extraerse.</div>
+      </div>
+      <div class="tcard">
+        <div class="tk">Prueba 3</div>
+        <h4>Resina transparente · medalla de 50.8 mm</h4>
+        <div class="big">0<small>piezas extraíbles</small></div>
+        <div class="stack"></div>
+        <div class="legend"><span style="--c:var(--bad)">Mayor volumen inyectado: 14.96 cm³</span></div>
+        <div class="fail">El inserto falló en el primer ciclo.</div>
+      </div>
+    </div>
+    <div class="costs">
+      <div>
+        <h3>Costo con tres geometrías de pieza</h3>
+        <div class="cbar"><div class="lbl"><span>Base de aluminio + 3 insertos de resina</span><b>Q1,857</b></div><div class="trk"><i style="width:49.5%;background:var(--acc)"></i></div></div>
+        <div class="cbar"><div class="lbl"><span>3 moldes de aluminio mecanizados (estimado)</span><b>≈ Q3,751.50</b></div><div class="trk"><i style="width:100%;background:#8e9aab"></i></div></div>
+        <p class="lead" style="font-size:15px">Base de aluminio Q1,401 una sola vez. Cada inserto cuesta Q152 y se imprime y cura en 8 h por lote de dos.</p>
+      </div>
+      <div class="reco"><b>Recomendación de la guía.</b> El inserto impreso puede producir series cortas para prácticas formativas, evitando los voladizos delgados y sujetándolo con dos tornillos en esquinas opuestas. Las fallas fueron frágiles y se asociaron con la geometría de la cavidad y con la sujeción.</div>
+    </div>
+  </div>
+</div>
+
+<aside id="muestra" class="panel" hidden>
+  <button class="close" id="muClose" aria-label="Cerrar">×</button>
+  <h3>Muestra inyectada e insertos impresos</h3>
+  <div class="chips" id="muView" style="margin-top:12px">
+    <button data-v="todo">Las tres piezas</button>
+    <button data-v="medalla">Medalla</button>
+    <button data-v="A">Inserto A</button>
+    <button data-v="B">Inserto B</button>
+  </div>
+  <div id="muInfo"></div>
+  <div id="muVarWrap">
+    <div class="lbl2">Estado de la muestra</div>
+    <div class="chips" id="muVar">
+      <button data-k="ok">Funcional completa</button>
+      <button data-k="short">Incompleta</button>
+      <button data-k="hole">Sin agujero</button>
+      <button data-k="blur">Letras ilegibles</button>
+    </div>
+    <div class="chips" style="margin-top:8px"><button id="muSprue">Bebedero: unido</button></div>
+  </div>
+  <div id="muResWrap">
+    <div class="lbl2">Resina del inserto</div>
+    <div class="chips" id="muRes">
+      <button data-r="white">Sculpt Ultra White</button>
+      <button data-r="clear">High Temp transparente</button>
+    </div>
+  </div>
+  <div class="lbl2">Fotos reales</div>
+  <div class="thumbs" id="muPhotos"></div>
+</aside>
+
+<div id="lightbox" hidden>
+  <button class="close" id="lbClose" aria-label="Cerrar" style="z-index:2">×</button>
+  <div class="imgwrap"><img id="lbImg" alt=""></div>
+  <div>
+    <div class="cap" id="lbCap"></div>
+    <div class="nav"><button class="navb" id="lbPrev">◀ Anterior</button><button class="navb" id="lbNext">Siguiente ▶</button></div>
+  </div>
+</div>
+
+<div id="planos" class="overlay" hidden>
+  <div class="box panel">
+    <button class="close" id="plClose" aria-label="Cerrar">×</button>
+    <h2>Planos del molde híbrido · MH-100</h2>
+    <div class="lead">Seis láminas en formato A, unidades en pulgadas. Dibujó y diseñó Esli Vivar; revisó y aprobó Laura Roldán.</div>
+    <div id="plTabs"></div>
+    <div id="plView" class="fit"><img id="plImg" alt="Plano"></div>
+    <div id="plBar">
+      <div class="cap" id="plCap"></div>
+      <button class="navb" id="plZoom">Ampliar</button>
+      <button class="navb prim" id="pl3d">Ver en 3D</button>
+    </div>
+  </div>
+</div>
+
+<div id="guia" class="overlay" hidden>
+  <div class="box panel">
+    <button class="close" id="gClose" aria-label="Cerrar">×</button>
+    <h2>Guía rápida</h2>
+    <div class="lead">Resumen de mi guía técnica para fabricar y usar insertos de resina en moldes de inyección. <button class="linkb" id="gFull" style="margin:6px 0 0">Abrir la guía completa</button></div>
+    <div class="cols">
+      <div id="gNav"></div>
+      <div id="gBody">
+        <section data-t="Paso a paso del proceso">
+          <h3>Paso a paso del proceso</h3>
+          <p>Es el diagrama de flujo de mi guía (Figura 2). Toca cada paso para ver qué hacer, qué revisar antes de avanzar y dónde está en la guía.</p>
+          <div id="flow"></div>
+        </section>
+        <section data-t="Qué es el molde híbrido">
+          <h3>1 · Qué es el molde híbrido</h3>
+          <p>La cavidad de la pieza no se mecaniza en metal: se imprime en un <b>inserto de resina</b> que se atornilla dentro de una <b>base de aluminio</b> reutilizable. La base es la que se sujeta a la inyectora.</p>
+          <table>
+            <tr><th>Componente</th><th>Medidas</th><th>Función</th></tr>
+            <tr><td>Inserto de resina</td><td>101.6 × 63.5 × 12.7 mm (4 × 2.5 × 0.5 in)</td><td>Contiene la cavidad. Es lo único que cambia con cada pieza.</td></tr>
+            <tr><td>Base de aluminio (portamoldes)</td><td>152.4 × 121.9 × 25.4 mm, alojamiento de 102.1 × 65.0 mm</td><td>Soporta el inserto y se usa con todos los insertos.</td></tr>
+            <tr><td>Contramolde</td><td>—</td><td>Mitad opuesta, con el orificio de inyección. Puede ser el molde de aluminio de la máquina o un segundo inserto.</td></tr>
+          </table>
+          <h4>Dos medidas para planificar</h4>
+          <ul>
+            <li><b>Vida funcional:</b> piezas funcionales completas antes de la primera pieza que falla por un daño del inserto.</li>
+            <li><b>Vida útil:</b> piezas extraíbles hasta la falla estructural total del inserto.</li>
+          </ul>
+          <div class="warn"><b>Advertencia.</b> Planifica una práctica con la vida funcional, no con la cantidad de piezas extraíbles.</div>
+          <h4>Etapas del proceso</h4>
+          <div class="flow"><span><b>1</b>Materiales</span><span><b>2</b>Diseño del inserto</span><span><b>3</b>Impresión</span><span><b>4</b>Post-procesado</span><span><b>5</b>Montaje</span><span><b>6</b>Inyección</span><span><b>7</b>Inspección y retiro</span></div>
+        </section>
+
+        <section data-t="Materiales">
+          <h3>2 · Materiales</h3>
+          <h4>Resina del inserto</h4>
+          <p>Debe ser compatible con impresoras MSLA o LCD de 385 a 405 nm y tener una HDT mayor que la temperatura del barril, con margen.</p>
+          <table>
+            <tr><th>Resina</th><th>HDT</th><th>Barril máximo</th><th>Uso</th></tr>
+            <tr><td>Sculpt Ultra White</td><td>250 °C</td><td>200 °C</td><td>Recomendada: el fabricante la indica para moldes de corridas cortas.</td></tr>
+            <tr><td>Sculpt High Temperature transparente</td><td>180 °C</td><td>170 °C</td><td>Alternativa si no hay Ultra White.</td></tr>
+          </table>
+          <h4>Polímero de inyección</h4>
+          <p><b>LDPE</b> (código de resina 4): se inyecta desde unos 160 °C, el rango más bajo de los polímeros considerados. Funde a 105–115 °C y contrae 1.5–4 %.</p>
+          <div class="warn"><b>Advertencia.</b> No inyectar POM en la APSX-PIM: si se sobrecalienta libera formaldehído.</div>
+          <h4>Base de aluminio</h4>
+          <p>Aluminio 6061-T6, mecanizado según los planos MH-101 y MH-102. Al recibirla, verifica con calibrador las medidas del alojamiento.</p>
+        </section>
+
+        <section data-t="Diseño del inserto">
+          <h3>3 · Diseño del inserto</h3>
+          <table>
+            <tr><th>Criterio</th><th>Indicación</th></tr>
+            <tr><td>Ángulo de desmoldeo</td><td>2° en todas las caras de la cavidad, incluidas las letras; se recomiendan 3° o más, sobre todo con Ultra White.</td></tr>
+            <tr><td>Voladizos</td><td>Evitarlos. Si la pieza lleva agujero, usar un voladizo en arco, con más sección y radios en su base.</td></tr>
+            <tr><td>Tamaño de la cavidad</td><td>Para un primer inserto, una pieza del orden de la medalla de 38.1 mm (unos 5 cm³).</td></tr>
+            <tr><td>Detalles finos</td><td>Mismo ángulo de desmoldeo; en la cavidad el texto va en espejo.</td></tr>
+            <tr><td>Orificios</td><td>Modelarlos en el inserto, con al menos 1 mm de material hasta el borde.</td></tr>
+            <tr><td>Espesores mínimos</td><td>Paredes y voladizos de 1 a 2 mm, con radio en su base.</td></tr>
+          </table>
+          <h4>Adaptar los planos base</h4>
+          <ol>
+            <li>Partir del plano base de la placa.</li>
+            <li>Modelar la pieza como sólido y aplicar 2° de desmoldeo.</li>
+            <li>Ubicar la pieza en la placa y restarla para formar la cavidad.</li>
+            <li>Revisar que la cavidad esté en la cara correcta y el texto en espejo.</li>
+            <li>Modelar la placa de cierre con el canal central y exportar ambas en STL.</li>
+          </ol>
+          <button class="linkb" data-go="muestraA">Ver el inserto A en 3D</button>
+        </section>
+
+        <section data-t="Impresión y post-procesado">
+          <h3>4 · Impresión y post-procesado</h3>
+          <h4>Configuración usada</h4>
+          <table>
+            <tr><td>Altura de capa</td><td>0.050 mm</td></tr>
+            <tr><td>Capas inferiores</td><td>5</td></tr>
+            <tr><td>Exposición normal / inferior</td><td>2 s / 25 s</td></tr>
+            <tr><td>Orientación</td><td>Diagonal a 45°, cavidad hacia arriba, soportes en la cara opuesta</td></tr>
+            <tr><td>Temperatura de la resina</td><td>25 °C a 30 °C</td></tr>
+            <tr><td>Lote de dos insertos</td><td>8 horas en total</td></tr>
+          </table>
+          <h4>Post-procesado</h4>
+          <ol>
+            <li><b>Retirar</b> las placas de la plataforma sin golpear la cavidad.</li>
+            <li><b>Lavar</b> en alcohol isopropílico o etanol al 95 %, 4 a 5 minutos en total.</li>
+            <li><b>Secar</b> a temperatura ambiente y luego en horno a no más de 80 °C, 7 a 8 minutos.</li>
+            <li><b>Retirar los soportes</b> de la cara opuesta a la cavidad.</li>
+            <li><b>Post-curar</b> con luz UV de 395 a 405 nm, unos 15 minutos.</li>
+            <li><b>Inspeccionar</b> la cavidad, el canal y los orificios, y probar el ajuste en la base.</li>
+            <li><b>Lijar</b> con grano 1000 si hace falta, nunca la cavidad.</li>
+          </ol>
+          <div class="warn"><b>Advertencia.</b> Los solventes son inflamables: trabaja ventilado, con guantes de nitrilo y lentes, y lejos de superficies calientes. No uses el inserto antes de completar el post-curado.</div>
+        </section>
+
+        <section data-t="Montaje">
+          <h3>5 · Montaje</h3>
+          <h4>Inserto en la base</h4>
+          <ol>
+            <li>Limpiar el alojamiento.</li>
+            <li>Colocar el inserto con la cavidad hacia la línea de partición, sin forzarlo.</li>
+            <li>Colocar dos tornillos en esquinas opuestas.</li>
+            <li>Apretar de forma alternada y sin exceso.</li>
+            <li>Verificar la alineación del canal con el orificio de inyección.</li>
+            <li>Iniciar la hoja de registro.</li>
+          </ol>
+          <div class="warn"><b>Advertencia.</b> Nunca 4 tornillos ni 2 en un mismo lado: la resina tiene apenas 1 % de elongación y se fractura en los orificios.</div>
+          <h4>Base en la inyectora</h4>
+          <ol>
+            <li>Colocar la base con el inserto montado.</li>
+            <li>Atornillar las alzas con llave de 11 mm.</li>
+            <li>Comprobar el cierre con Engage Clamp SLOW.</li>
+            <li>Cerrar la puerta de protección.</li>
+          </ol>
+          <button class="linkb" data-go="montaje">Ver el montaje animado</button>
+        </section>
+
+        <section data-t="Inyección">
+          <h3>6 · Inyección</h3>
+          <table>
+            <tr><th>Parámetro</th><th>Ultra White (prueba 1)</th><th>Transparente (prueba 2)</th></tr>
+            <tr><td>Temperatura del barril</td><td>200 °C</td><td>160–170 °C</td></tr>
+            <tr><td>Temperatura del molde</td><td>60 °C</td><td>70 °C</td></tr>
+            <tr><td>Presión de inyección</td><td>170 bar</td><td>65 bar</td></tr>
+            <tr><td>Fuerza de cierre</td><td>525 kg</td><td>520 kg</td></tr>
+            <tr><td>Tiempo de ciclo</td><td>81 s</td><td>88–93 s</td></tr>
+          </table>
+          <div class="warn"><b>Advertencia.</b> No superar 200 °C en el barril con Ultra White ni 170 °C con la transparente.</div>
+          <h4>Primeros ciclos</h4>
+          <ol>
+            <li>Cargar LDPE en el hopper e ingresar los parámetros.</li>
+            <li>Calentar (HEAT) y hacer un ciclo en modo SINGLE.</li>
+            <li>Si no sale material, ajustar la dosificación (CUT OFF AMOUNT y válvulas).</li>
+            <li>Si la pieza sale incompleta, revisar la alimentación del hopper.</li>
+            <li>Esperar el enfriamiento y extraer sin hacer palanca sobre la cavidad.</li>
+            <li>Fijar los parámetros desde la primera pieza extraíble y registrar cada ciclo.</li>
+          </ol>
+          <button class="linkb" data-go="ajustar">Probar los parámetros en el modelo</button>
+        </section>
+
+        <section data-t="Inspección y retiro">
+          <h3>7 · Inspección y retiro</h3>
+          <h4>Pieza funcional completa</h4>
+          <ol><li>Se extrae sin romperse ni dañar el inserto.</li><li>Reproduce el contorno completo.</li><li>Letras y relieves legibles.</li><li>Todos sus elementos formados, como el agujero.</li></ol>
+          <h4>Señales de deterioro</h4>
+          <table>
+            <tr><th>Señal</th><th>Qué hacer</th></tr>
+            <tr><td>Agujero no formado o voladizo roto</td><td>Fin de la vida funcional: en una práctica, retirar el inserto.</td></tr>
+            <tr><td>Muesca o astillado en la cavidad</td><td>Revisar el inserto en cada ciclo y no cambiar presión ni cierre.</td></tr>
+            <tr><td>Grieta visible</td><td>En una práctica, retirar; en un inserto de prueba, inspeccionar cada ciclo.</td></tr>
+            <tr><td>Volumen inyectado mayor que el habitual</td><td>Posible fractura: inspeccionar antes del siguiente ciclo.</td></tr>
+            <tr><td>Volumen bajo que se recupera al recargar</td><td>Falla de alimentación de la máquina, no del inserto.</td></tr>
+            <tr><td>LDPE hacia los tornillos o pieza que no sale</td><td>Falla estructural total: retirar el inserto.</td></tr>
+          </table>
+          <h4>Retiro</h4>
+          <ol><li>Detener la inyectora y dejar enfriar el molde.</li><li>Quitar los dos tornillos y sacar el inserto.</li><li>Limpiar el alojamiento y los orificios roscados.</li><li>Registrar la vida del inserto y la causa de la falla.</li></ol>
+          <button class="linkb" data-go="inspeccion">Practicar la inspección</button>
+        </section>
+        <div class="src">Fuente: Vivar Villatoro, E. M. Guía técnica: fabricación de moldes de inyección con insertos de resina para la inyectora APSX-PIM. Anexo 13.6 del trabajo de graduación, Universidad del Valle de Guatemala, 2026.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="guiaDoc" class="overlay" hidden>
+  <div class="box panel">
+    <button class="close" id="gdClose" aria-label="Cerrar">×</button>
+    <h2>Guía técnica completa</h2>
+    <div class="lead">Fabricación de moldes de inyección con insertos de resina para la inyectora APSX-PIM · Anexo 13.6 del trabajo de graduación · 62 páginas</div>
+    <div id="gdTabs"></div>
+    <div id="gdView" class="fit"><img id="gdImg" alt="Página de la guía"></div>
+    <div id="gdBar">
+      <button class="navb" id="gdPrev">◀ Anterior</button>
+      <div class="pg" id="gdPg">Página 1 de 62</div>
+      <button class="navb" id="gdNext">Siguiente ▶</button>
+      <button class="navb" id="gdZoom">Ampliar</button>
+    </div>
+  </div>
+</div>
+
+<div id="start">
+  <div>
+    <svg class="medal-ic" viewBox="0 0 120 150" aria-hidden="true">
+      <circle cx="60" cy="22" r="13" fill="none" stroke="#f2c230" stroke-width="7"/>
+      <circle cx="60" cy="88" r="52" fill="#f2c230"/>
+      <circle cx="60" cy="88" r="44" fill="none" stroke="#c99a12" stroke-width="3"/>
+      <text x="60" y="100" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-weight="700" font-size="34" fill="#a57c0a">UVG</text>
+    </svg>
+    <div class="uni">Universidad del Valle de Guatemala · Ingeniería Mecánica</div>
+    <h1>Elaboración de una guía de materiales para fabricar <em>moldes de inyección de plástico</em> mediante tecnologías aditivas en universidades</h1>
+    <div class="who">Esli María Vivar Villatoro · Trabajo de graduación 2026</div>
+    <button class="go" id="goBtn">Toca para explorar</button>
+    <div class="hint">Gira la máquina con un dedo · pellizca para acercar · toca una pieza para ver su ficha</div>
+  </div>
+</div>
+
+<div id="err" hidden><div>No se pudo cargar el motor 3D.<br>Revisa tu conexión a internet.<br><button class="navb prim" onclick="location.reload()">Reintentar</button></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+function __main(){
+'use strict';
+if(!window.THREE){ document.getElementById('err').hidden=false; return; }
+const $=s=>document.querySelector(s);
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sm=t=>{t=clamp(t);return t*t*(3-2*t);};
+const eo=t=>{t=clamp(t);return 1-Math.pow(1-t,3);};
+
+/* ---------------- render ---------------- */
+const canvas=$('#c');
+let renderer;
+try{
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+}catch(e){ document.getElementById('err').hidden=false; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.localClippingEnabled=true;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.setClearColor(0x000000,0);
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x0b0e13,140,260);
+const camera=new THREE.PerspectiveCamera(38,1,0.5,600);
+
+scene.add(new THREE.HemisphereLight(0xdfe8ff,0x20242c,0.8));
+const key=new THREE.DirectionalLight(0xffffff,0.95); key.position.set(-30,55,45); scene.add(key);
+const rim=new THREE.DirectionalLight(0x8fb4ff,0.5); rim.position.set(45,25,-40); scene.add(rim);
+const warm=new THREE.PointLight(0xffc27a,0.55,90); warm.position.set(-14,8,14); scene.add(warm);
+
+const cutPlane=new THREE.Plane(V(0,0,-1),200);
+const fillPlane=new THREE.Plane(V(0,1,0),1000);
+function M(o,extraPlanes){
+  const m=new THREE.MeshStandardMaterial(Object.assign({side:THREE.DoubleSide},o));
+  m.clippingPlanes=extraPlanes?[cutPlane].concat(extraPlanes):[cutPlane];
+  return m;
+}
+const MAT={
+  alu:{color:0xbac1c9,metalness:0.72,roughness:0.36},
+  black:{color:0x24272d,metalness:0.35,roughness:0.62},
+  blackm:{color:0x1a1c20,metalness:0.2,roughness:0.75},
+  steel:{color:0xd6dadf,metalness:0.88,roughness:0.24},
+  dsteel:{color:0x737a83,metalness:0.8,roughness:0.42},
+  resin:{color:0xe0902f,metalness:0,roughness:0.22,transparent:true,opacity:0.74},
+  resinS:{color:0xf0a646,metalness:0,roughness:0.3},
+  heater:{color:0x8a5a3c,metalness:0.55,roughness:0.45,emissive:0xff4a10,emissiveIntensity:0.15},
+  pellet:{color:0xf6e68d,roughness:0.75},
+  melt:{color:0xffb21e,emissive:0xff6a00,emissiveIntensity:0.6,roughness:0.35},
+  channel:{color:0x3b2a18,roughness:0.8},
+  acrylic:{color:0xcfe9ff,metalness:0,roughness:0.05,transparent:true,opacity:0.12,depthWrite:false},
+  red:{color:0xc23a2c,roughness:0.5},
+  crack:{color:0x2a0a05,emissive:0xff2a10,emissiveIntensity:0.9,roughness:0.6}
+};
+
+/* ---------------- piezas y partes ---------------- */
+const pieces=[]; const parts={}; const clickables=[];
+const PART_INFO=[
+ ['tolva',1,'Tolva (hopper)',{mat:'Acero',fn:'Almacena los gránulos de LDPE y los deja caer por gravedad al barril.',dato:'En la prueba 1, la muestra 17 salió incompleta por la calibración del hopper.'}],
+ ['barril',2,'Barril con calentadores',{mat:'Acero con bandas calefactoras',fn:'Calienta y funde el plástico antes de inyectarlo.',med:'Temperatura máxima de la máquina: 315 °C',dato:'Prueba 1: 200 °C · Prueba 2: 160–170 °C.'}],
+ ['minibarril',3,'Mini barril',{mat:'Acero',fn:'Conduce el plástico fundido desde el barril hasta la boquilla.',dato:'En las pruebas 2 y 3 se registró a 130–140 °C con los parámetros finales.'}],
+ ['valvulas',4,'Válvulas de dosificación',{mat:'Acero',fn:'Controlan cuánto plástico pasa en cada ciclo (parámetro CUT OFF AMOUNT de la pantalla).',dato:'En la prueba 1, los ciclos 1 a 9 no dieron muestra porque la dosificación y las válvulas no estaban bien ajustadas.'}],
+ ['resorte',5,'Resorte',{mat:'Acero',fn:'Al liberarse empuja el émbolo: así la máquina genera la presión de inyección sin hidráulica ni neumática.',med:'Volumen de inyección máximo: 30 cm³'}],
+ ['embolo',6,'Émbolo',{mat:'Acero',fn:'Empuja el plástico fundido hacia el molde.',dato:'Presión final de la prueba 1: 170 bar.'}],
+ ['boquilla',7,'Boquilla',{mat:'Acero',fn:'Une el barril con el bebedero del molde para que el plástico entre sin fugas.'}],
+ ['motor',8,'Motor con cadena',{mat:'Motor paso a paso, cadena y tornillo de bolas',fn:'Gira el tornillo que mueve la placa móvil para abrir y cerrar el molde.'}],
+ ['guias',9,'Guías cilíndricas',{mat:'Acero',fn:'Mantienen alineada la placa móvil mientras el molde se abre y se cierra.'}],
+ ['placas',10,'Placas de la unidad de cierre',{mat:'Acero',fn:'Sostienen las dos mitades del molde y las aprietan durante la inyección.',med:'Fuerza de sujeción máxima: 5 t · molde de 152 × 122 mm',dato:'Fuerza de cierre en la prueba 1: 525 kg.'}],
+ ['baseA',11,'Base de aluminio · lado A',{mat:'Aluminio 6061-T6',fn:'Aloja la placa de cavidad y la sujeta en la inyectora. Se reutiliza con cada inserto nuevo.',med:'152.4 × 121.9 × 25.4 mm',dato:'Costo de la base: Q1,401, una sola vez.'}],
+ ['baseB',12,'Base de aluminio · lado B (contramolde)',{mat:'Aluminio 6061-T6',fn:'Mitad opuesta del molde, con el orificio por donde entra el plástico.',med:'152.4 × 121.9 × 25.4 mm'}],
+ ['cavidad',13,'Placa de cavidad (inserto)',{mat:'Resina impresa en 3D: Sculpt High Temperature transparente (HDT 180 °C) o Sculpt Ultra White (HDT 250 °C)',fn:'Tiene la forma de la medalla. Se imprime en 3D y se cambia cuando falla o cuando se quiere otra pieza.',med:'101.6 × 63.5 × 12.7 mm (2.500 × 4.000 × 0.50 in, plano MH-104)',dato:'Q152 por inserto · 8 h de impresión y curado por lote de dos.'}],
+ ['cierre',14,'Placa de cierre (inserto)',{mat:'Resina impresa en 3D',fn:'Cierra la cavidad y tiene el orificio de inyección con el bebedero cónico.',med:'101.6 × 63.5 × 12.7 mm'}],
+ ['bebedero',15,'Bebedero',{mat:'Canal cónico en la placa de cierre',fn:'Por aquí entra el plástico; desemboca directamente en la medalla.',dato:'El bebedero sale unido a la medalla y se separa después.'}],
+ ['voladizo',16,'Voladizo',{mat:'Resina (parte de la placa de cavidad)',fn:'Saliente delgado que forma el agujero de la argolla. Es la zona más frágil del inserto.',dato:'Prueba 1, cilíndrico: falló en la muestra 8. Prueba 2, en arco: las 9 piezas salieron con agujero.'}],
+ ['tornillos',17,'Tornillos en diagonal',{mat:'Acero inoxidable · ANSI B18.3 5/16-18 × 3/4 in, cabeza de botón con hexágono interior',fn:'Fijan el inserto a la base. Solo dos, en esquinas opuestas.',dato:'Cada tornillo introduce esfuerzos en la resina: con 4 tornillos o 2 en un mismo lado aumenta el riesgo de fractura en los orificios.'}],
+ ['alzas',18,'Alzas',{mat:'Acero',fn:'Sujetan la base de aluminio a la placa de la inyectora.',med:'Se aprietan con llave de 11 mm'}],
+ ['particion',19,'Línea de partición',{mat:'—',fn:'Plano donde se juntan los lados A y B; ahí se abre el molde para sacar la pieza.'}],
+ ['medalla',20,'Medalla de LDPE',{mat:'Polietileno de baja densidad (código de resina 4)',fn:'Pieza de prueba de mi trabajo.',med:'Ø 38.1 mm con argolla · alto total 1.86 in y espesor .30 in con 2° de desmoldeo (plano MH-105)',dato:'El LDPE funde a 105–115 °C, se inyecta desde unos 160 °C y contrae 1.5–4 %.'}],
+ ['puerta',21,'Puerta de protección',{mat:'Acrílico',fn:'Protege a quien opera la máquina; se cierra antes de calentar e inyectar.'}],
+ ['pantalla',22,'Pantalla de control',{mat:'—',fn:'Aquí se ingresan temperatura, presión, fuerza de cierre, tiempo de ciclo y dosificación.'}]
+];
+PART_INFO.forEach(([id,num,name,info])=>{parts[id]={id,num,name,info,pieces:[],mats:[],anchor:V(0,0,0)};});
+
+function piece(partId,explode,opts={}){
+  const g=new THREE.Group(); scene.add(g);
+  const p={g,partId,base:opts.base?opts.base.clone():V(0,0,0),explode:V(...explode),anim:V(0,0,0),moving:!!opts.moving,
+    scatter:V(0,0,0),delay:0};
+  pieces.push(p); if(partId) parts[partId].pieces.push(p);
+  return p;
+}
+function reg(partId,mat){ if(!partId) return; const pm=parts[partId].mats; if(pm.indexOf(mat)<0){ pm.push(mat); mat.userData.e0=mat.emissive.clone(); mat.userData.i0=mat.emissiveIntensity; } }
+function add(p,geo,mat,pos,rot,opts={}){
+  const m=new THREE.Mesh(geo,mat);
+  if(pos) m.position.set(pos[0],pos[1],pos[2]);
+  if(rot) m.rotation.set(rot[0],rot[1],rot[2]);
+  (opts.parent||p.g).add(m);
+  m.userData.partId=opts.click===false?null:p.partId;
+  if(p.partId && opts.click!==false) clickables.push(m);
+  if(!opts.noHL){ (Array.isArray(mat)?mat:[mat]).forEach(mm=>reg(p.partId,mm)); }
+  return m;
+}
+const box=(x,y,z)=>new THREE.BoxGeometry(x,y,z);
+function cylX(r1,r2,len,seg=24,open=false){ const g=new THREE.CylinderGeometry(r1,r2,len,seg,1,open); g.rotateZ(Math.PI/2); return g; } // r1 en -x
+function cylY(r1,r2,len,seg=24,open=false){ return new THREE.CylinderGeometry(r1,r2,len,seg,1,open); }
+function unitX(r,seg=24){ const g=new THREE.CylinderGeometry(r,r,1,seg); g.rotateZ(Math.PI/2); g.translate(0.5,0,0); return g; } // de x=0 a x=1
+class Helix extends THREE.Curve{
+  constructor(R,turns,len){super();this.R=R;this.t=turns;this.len=len;}
+  getPoint(t,o=new THREE.Vector3()){const a=t*this.t*Math.PI*2;return o.set(t*this.len,this.R*Math.cos(a),this.R*Math.sin(a));}
+}
+
+/* ---- dimensiones (1 unidad = 1 cm) ---- */
+const OPEN=7.5;           // apertura del molde
+const XR=-26.5, XA=-19;   // émbolo retraído / adelantado
+const BW=15.24, BH=12.19, BT=2.54;  // base de aluminio
+const IW=6.35, IH=10.16, IT=1.27;   // inserto 2.50 × 4.00 × 0.50 in (MH-103/104)
+const PW=6.50, PH=10.21;            // alojamiento 2.560 × 4.020 in (MH-101/102)
+
+/* bastidor (sin etiqueta) */
+{
+  const p=piece(null,[0,-3,0]);
+  const mb=M(MAT.blackm);
+  add(p,box(86,1.6,22),mb,[-4,-13.6,0]);
+  [[-44,8],[-44,-8],[36,8],[36,-8]].forEach(([x,z])=>add(p,box(3,1.2,3),M(MAT.dsteel),[x,-15,z]));
+  add(p,box(3,10.4,8),mb,[-24,-7.6,0]);
+  add(p,box(3,8.8,8),mb,[-45.5,-8.4,0]);
+  add(p,box(2.4,2.4,20),mb,[-3.54,-11.2,0]);
+  add(p,box(2.4,2.4,20),mb,[25,-11.2,0]);
+}
+
+/* 5 resorte */
+const springP=piece('resorte',[-14,0,0]);
+{
+  const ms=M(MAT.steel), mb=M(MAT.black);
+  add(springP,box(1.2,8,8),mb,[-46,0,0]);
+  add(springP,cylX(0.35,0.35,18,12),ms,[-37,3.6,0]);
+  add(springP,cylX(0.35,0.35,18,12),ms,[-37,-3.6,0]);
+}
+const springMesh=add(springP,new THREE.TubeGeometry(new Helix(2.3,7,1),200,0.24,6,false),M({color:0xc9ced4,metalness:0.85,roughness:0.3}),[-45.4,0,0]);
+
+/* 6 émbolo */
+const emboloP=piece('embolo',[-9,-7,0]);
+{
+  const ms=M(MAT.steel);
+  add(emboloP,box(1,7.4,7.4),M(MAT.dsteel),[XR-13,0,0]);
+  add(emboloP,cylX(0.55,0.55,12.4,16),ms,[XR-6.8,0,0]);
+  add(emboloP,cylX(2.0,2.0,1.2,28),M({color:0xe8ecf0,metalness:0.9,roughness:0.18}),[XR,0,0]);
+}
+
+/* 2 barril */
+const barrilP=piece('barril',[-6,0,0]);
+const heaterMats=[];
+let meltCol, meltMat;
+{
+  const bm=M({color:0xcfd4da,metalness:0.85,roughness:0.28});
+  add(barrilP,cylX(2.3,2.3,18,32),bm,[-19,0,0]);
+  add(barrilP,cylX(3.1,3.1,0.9,32),M(MAT.dsteel),[-28,0,0]);
+  [-20,-16.5,-13].forEach(x=>{ const hm=M(MAT.heater); heaterMats.push(hm); add(barrilP,cylX(2.62,2.62,2.3,32),hm,[x,0,0]);
+    add(barrilP,box(0.6,0.8,0.6),M(MAT.dsteel),[x,2.9,0]); });
+  meltMat=M(MAT.melt);
+  meltCol=add(barrilP,unitX(1.95,28),meltMat,[0,0,0],null,{noHL:true,click:false});
+}
+
+/* 1 tolva (con gránulos) */
+const tolvaP=piece('tolva',[-6,10,0]);
+let pelletFall;
+{
+  const tm=M({color:0xb9c0c8,metalness:0.7,roughness:0.35});
+  add(tolvaP,cylY(1.0,1.0,2.2,20,true),tm,[-24,3.2,0]);
+  add(tolvaP,cylY(4.3,1.0,5.2,28,true),tm,[-24,6.9,0]);
+  add(tolvaP,new THREE.TorusGeometry(4.3,0.18,8,40),M(MAT.dsteel),[-24,9.5,0],[Math.PI/2,0,0]);
+  const pm=M(MAT.pellet);
+  const pg=new THREE.SphereGeometry(0.34,7,5);
+  const pile=new THREE.InstancedMesh(pg,pm,90);
+  const mtx=new THREE.Matrix4(); let k=0;
+  for(let i=0;i<400&&k<90;i++){
+    const y=4.6+Math.random()*3.2; const rmax=(1.0+(y-4.3)/5.2*3.3)*0.82;
+    const r=rmax*Math.sqrt(Math.random()), a=Math.random()*Math.PI*2;
+    mtx.makeTranslation(-24+r*Math.cos(a),y,r*Math.sin(a)); pile.setMatrixAt(k++,mtx);
+  }
+  pile.userData.partId='tolva'; clickables.push(pile); tolvaP.g.add(pile); reg('tolva',pm);
+  pelletFall=new THREE.InstancedMesh(pg,pm,12); pelletFall.userData.partId=null; tolvaP.g.add(pelletFall);
+}
+
+/* 3 mini barril */
+const miniP=piece('minibarril',[-3,-5,0]);
+let miniMelt;
+{
+  add(miniP,cylX(1.3,1.3,4,24),M({color:0xc3c8ce,metalness:0.85,roughness:0.3}),[-8,0,0]);
+  add(miniP,cylX(1.55,1.55,0.6,24),M(MAT.dsteel),[-9.6,0,0]);
+  add(miniP,cylX(1.55,1.55,0.6,24),M(MAT.dsteel),[-6.4,0,0]);
+  miniMelt=add(miniP,unitX(0.9,20),meltMat,[-10,0,0],null,{noHL:true,click:false});
+}
+
+/* 4 válvulas */
+const valvP=piece('valvulas',[-3,7,0]);
+const levers=[];
+{
+  [-9,-7].forEach(x=>{
+    add(valvP,box(1.2,1.1,1.2),M(MAT.dsteel),[x,1.85,0]);
+    add(valvP,cylY(0.22,0.22,0.9,10),M(MAT.steel),[x,2.8,0]);
+    const pv=new THREE.Group(); pv.position.set(x,3.25,0); valvP.g.add(pv);
+    add(valvP,box(0.32,0.28,2.4),M(MAT.red),[0,0,0.9],null,{parent:pv});
+    levers.push(pv);
+  });
+}
+
+/* 7 boquilla */
+const boqP=piece('boquilla',[-1,-8,0]);
+let nozMelt;
+{
+  add(boqP,cylX(0.95,0.38,3.46,24),M({color:0xd0d5db,metalness:0.88,roughness:0.25}),[-4.27,0,0]);
+  const g=new THREE.CylinderGeometry(0.22,0.22,1,12); g.rotateZ(Math.PI/2); g.translate(0.5,0,0);
+  nozMelt=add(boqP,g,meltMat,[-6,0,0],null,{noHL:true,click:false});
+}
+
+/* 10 placas (fija, móvil, trasera) */
+const placaFija=piece('placas',[-6,0,0]);
+const placaMovil=piece('placas',[9,0,0],{moving:true});
+const placaTras=piece('placas',[14,0,0]);
+{
+  const pb=M(MAT.black);
+  add(placaMovil,box(2,20,20),pb,[3.54,0,0]);
+  add(placaMovil,cylX(1.0,1.0,7.6,20),M(MAT.blackm),[8.34,0,0]);
+  add(placaFija,box(2,20,20),pb,[-3.54,0,0]);
+  add(placaTras,box(2,20,20),pb,[25,0,0]);
+  [[8.6,8.6],[8.6,-8.6],[-8.6,8.6],[-8.6,-8.6]].forEach(([y,z])=>{
+    add(placaFija,cylX(1.5,1.5,0.5,20),M(MAT.dsteel),[-4.8,y,z]);
+    add(placaTras,cylX(1.5,1.5,0.5,20),M(MAT.dsteel),[26.25,y,z]);
+  });
+}
+
+/* 9 guías */
+const guiaSup=piece('guias',[3,4.5,0]);
+const guiaInf=piece('guias',[3,-4.5,0]);
+{
+  const gm=M({color:0xdde1e5,metalness:0.92,roughness:0.18});
+  [8.6,-8.6].forEach(z=>{ add(guiaSup,cylX(0.9,0.9,28.6,24),gm,[9.75,8.6,z]); add(guiaInf,cylX(0.9,0.9,28.6,24),gm,[9.75,-8.6,z]); });
+}
+
+/* 8 motor + cadena + tornillo de bolas */
+const motorP=piece('motor',[15,5,0]);
+const screwP=piece('motor',[12,0,0]);
+let screwRot, sprBig, sprSmall;
+{
+  screwRot=new THREE.Group(); screwP.g.add(screwRot);
+  add(screwP,cylX(0.5,0.5,12.6,16),M(MAT.steel),[17.7,0,0],null,{parent:screwRot});
+  add(screwP,new THREE.TubeGeometry(new Helix(0.56,26,12.4),300,0.1,5,false),M(MAT.dsteel),[11.5,0,0],null,{parent:screwRot});
+  sprBig=new THREE.Group(); sprBig.position.set(27.3,0,0); motorP.g.add(sprBig);
+  add(motorP,cylX(2.3,2.3,0.4,30),M(MAT.dsteel),[0,0,0],null,{parent:sprBig});
+  add(motorP,box(0.5,4.4,0.5),M(MAT.blackm),[0,0,0],null,{parent:sprBig});
+  add(motorP,box(0.5,0.5,4.4),M(MAT.blackm),[0,0,0],null,{parent:sprBig});
+  sprSmall=new THREE.Group(); sprSmall.position.set(27.3,9.5,0); motorP.g.add(sprSmall);
+  add(motorP,cylX(1.15,1.15,0.4,20),M(MAT.dsteel),[0,0,0],null,{parent:sprSmall});
+  add(motorP,box(0.5,2.2,0.5),M(MAT.blackm),[0,0,0],null,{parent:sprSmall});
+  const cm=M({color:0x3d4148,metalness:0.6,roughness:0.5});
+  [1,-1].forEach(s=>{
+    const dz=s*(2.3-1.15), len=Math.hypot(9.5,dz);
+    const m=add(motorP,box(0.3,len,0.32),cm,[27.3,4.75,s*1.72]); m.rotation.x=-Math.atan2(dz,9.5)*s*s;
+  });
+  add(motorP,box(7,5.6,5.6),M(MAT.black),[31.6,9.5,0]);
+  add(motorP,box(0.5,5.8,5.8),M(MAT.steel),[28.3,9.5,0]);
+  add(motorP,box(0.5,5.8,5.8),M(MAT.steel),[34.9,9.5,0]);
+  add(motorP,box(5,0.8,1.6),M(MAT.dsteel),[31.6,6.5,0]);
+}
+
+/* ---- geometría de la medalla según el plano MH-105 (cm) ---- */
+const MR=1.93, MRR=0.89, MD=1.93;   // disco R .76 in; argolla R .35 in con centro en el borde superior del disco
+const MT=0.53, LT=0.23;             // espesor del disco y relieve de las letras (total ≈ .30 in)
+const GY=-1.905;                    // centro del disco respecto al punto de inyección (centro del inserto)
+function medalShape(cx,cy,withHole){
+  const s=new THREE.Shape();
+  const yi=(2*MR*MR-MRR*MRR)/(2*MR), xi=Math.sqrt(MR*MR-yi*yi);
+  const a1=Math.atan2(yi,xi), a2=Math.atan2(yi-MD,xi);
+  s.moveTo(cx+xi,cy+yi);
+  s.absarc(cx,cy,MR,a1,Math.PI-a1,true);
+  s.absarc(cx,cy+MD,MRR,Math.PI-a2,a2,true);
+  if(withHole) s.holes.push(holeShape(cx,cy,false));
+  return s;
+}
+function holeShape(cx,cy,asShape){ // agujero en "D" que forma el voladizo
+  const hy=cy+MD+0.05, hr=0.43; const h=asShape?new THREE.Shape():new THREE.Path();
+  h.moveTo(cx+hr,hy); h.absarc(cx,hy,hr,0,Math.PI,false); h.lineTo(cx+hr,hy); return h;
+}
+function letterShapes(){
+  const U=new THREE.Shape(); U.moveTo(-0.4,0.5); U.lineTo(-0.4,-0.1); U.absarc(0,-0.1,0.4,Math.PI,2*Math.PI,false);
+  U.lineTo(0.4,0.5); U.lineTo(0.2,0.5); U.lineTo(0.2,-0.1); U.absarc(0,-0.1,0.2,0,-Math.PI,true); U.lineTo(-0.2,0.5); U.lineTo(-0.4,0.5);
+  const Vv=new THREE.Shape(); [[-0.44,0.5],[-0.22,0.5],[0,-0.2],[0.22,0.5],[0.44,0.5],[0.12,-0.5],[-0.12,-0.5],[-0.44,0.5]].forEach((p,i)=>i?Vv.lineTo(p[0],p[1]):Vv.moveTo(p[0],p[1]));
+  const ga=0.62, gx=Math.sqrt(0.09-0.0144);
+  const G=new THREE.Shape(); G.moveTo(0.5*Math.cos(ga),0.5*Math.sin(ga)); G.absarc(0,0,0.5,ga,2*Math.PI,false);
+  G.lineTo(0.5,0.08); G.lineTo(0.05,0.08); G.lineTo(0.05,-0.12); G.lineTo(gx,-0.12);
+  G.absarc(0,0,0.3,Math.atan2(-0.12,gx),ga-2*Math.PI,true); G.lineTo(0.5*Math.cos(ga),0.5*Math.sin(ga));
+  return [[U,-0.98],[Vv,0],[G,1.0]];
+}
+function letterGeos(cx,cy,depth,z0,mirror){
+  const k=0.88;
+  return letterShapes().map(([s,dx])=>{ const g=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:false,curveSegments:10});
+    g.scale(k*(mirror?-1:1),k,1); g.translate(cx+dx*k*(mirror?-1:1),cy,z0); return g; });
+}
+function medalGeo(cx,cy,depth,withHole,bevel){
+  return new THREE.ExtrudeGeometry(medalShape(cx,cy,withHole),bevel?{depth,bevelEnabled:true,bevelThickness:0.04,bevelSize:0.03,bevelSegments:2,curveSegments:40}:{depth,bevelEnabled:false,curveSegments:40});
+}
+const toMold=g=>{ g.rotateY(Math.PI/2); return g; }; // cara de la pieza en el plano YZ, espesor hacia +x
+
+/* 12 base B (lado de inyección) */
+function alBase(p,x0,dir){ // dir=-1 lado B (hacia -x), +1 lado A
+  const am=M(MAT.alu);
+  const sx=x0+dir*(IT+IT/2); // losa trasera
+  add(p,box(IT,BH,BW),am,[sx,0,0]);
+  const fx=x0+dir*IT/2;
+  const tb=(BH-PH)/2, lr=(BW-PW)/2;
+  add(p,box(IT,tb,BW),am,[fx,PH/2+tb/2,0]);
+  add(p,box(IT,tb,BW),am,[fx,-(PH/2+tb/2),0]);
+  add(p,box(IT,PH,lr),am,[fx,0,PW/2+lr/2]);
+  add(p,box(IT,PH,lr),am,[fx,0,-(PW/2+lr/2)]);
+  // orificios roscados de las alzas / pasantes (decorativos)
+  [[4.4,6.3],[-4.4,6.3],[4.4,-6.3],[-4.4,-6.3]].forEach(([y,z])=>add(p,cylX(0.45,0.45,0.05,14),M(MAT.blackm),[x0-dir*0.01,y,z],null,{click:false,noHL:true}));
+}
+const baseB=piece('baseB',[-3.5,0,0]);
+alBase(baseB,0,-1);
+
+/* 14 placa de cierre (resina, lado B) */
+const cierreP=piece('cierre',[-1.5,0,0]);
+add(cierreP,box(IT,IH,IW),M(MAT.resin),[-IT/2,0,0]);
+
+/* 15 bebedero */
+const bebP=piece('bebedero',[-1,8.5,0]);
+let sprueMelt;
+{
+  add(bebP,cylX(0.24,0.28,1.27,20),M(MAT.channel),[-1.905,0,0]);
+  add(bebP,cylX(0.33,0.445,1.27,20),M(MAT.channel),[-0.635,0,0]);
+  const g=new THREE.CylinderGeometry(0.22,0.42,1,18); g.rotateZ(Math.PI/2); g.translate(0.5,0,0);
+  sprueMelt=add(bebP,g,meltMat,[-2.54,0,0],null,{noHL:true,click:false});
+  sprueMelt.scale.x=2.54;
+}
+
+/* 11 base A (móvil) */
+const baseA=piece('baseA',[5,0,0],{moving:true});
+alBase(baseA,0,1);
+
+/* 13 placa de cavidad */
+const cavP=piece('cavidad',[2.5,0,0],{moving:true});
+let cracks;
+{
+  add(cavP,box(IT,IH,IW),M(MAT.resin),[IT/2,0,0]);
+  add(cavP,toMold(medalGeo(0,GY,MT,false,false)),M({color:0x6b3d10,roughness:0.6,transparent:true,opacity:0.5}),[0.004,0,0],null,{click:false,noHL:true});
+  letterGeos(0,GY,0.12,MT,false).forEach(g=>add(cavP,toMold(g),M({color:0x4a2808,roughness:0.6,transparent:true,opacity:0.6}),[0,0,0],null,{click:false,noHL:true}));
+  // orificios vacíos (esquinas sin tornillo)
+  [[4.445,2.54],[-4.445,-2.54]].forEach(([y,z])=>{
+    add(cavP,cylX(0.445,0.445,0.6,16),M(MAT.blackm),[0.3,y,z],null,{click:false,noHL:true});
+  });
+  cracks=new THREE.Group(); cavP.g.add(cracks);
+  const cm=M(MAT.crack);
+  [[[-0.02,1.4,-0.9],2.2,0.6],[[-0.02,3.0,-1.7],1.9,-0.5],[[-0.02,-0.6,1.1],2.4,-0.4],[[-0.02,-2.9,1.9],2.0,0.5]].forEach(([pos,l,a])=>{
+    const m=add(cavP,box(0.06,l,0.07),cm,pos,[a,0,0],{parent:cracks,click:false,noHL:true});
+  });
+  cracks.visible=false;
+}
+
+/* 16 voladizo */
+const volP=piece('voladizo',[2,7.5,0],{moving:true});
+add(volP,toMold(new THREE.ExtrudeGeometry(holeShape(0,GY,true),{depth:MT,bevelEnabled:false,curveSegments:16})),M(MAT.resinS),[0,0,0]);
+
+/* 17 tornillos en diagonal */
+const tornP=piece('tornillos',[3,0,8],{moving:true});
+const screws=[];
+{
+  [[4.445,-2.54],[-4.445,2.54]].forEach(([y,z])=>{
+    const g=new THREE.Group(); g.position.set(0.14,y,z); tornP.g.add(g); screws.push(g);
+    add(tornP,cylX(0.48,0.48,0.24,22),M({color:0xdfe3e7,metalness:0.92,roughness:0.2}),[0,0,0],null,{parent:g});
+    add(tornP,cylX(0.17,0.17,0.26,6),M(MAT.blackm),[-0.02,0,0],null,{parent:g,click:false,noHL:true});
+    add(tornP,cylX(0.26,0.26,1.6,12),M(MAT.dsteel),[0.9,0,0],null,{parent:g,click:false,noHL:true});
+  });
+}
+
+/* 18 alzas */
+const alzas=[];
+[1,-1].forEach(s=>{
+  const p=piece('alzas',[5,0,s*3.5],{moving:true}); alzas.push(p);
+  const am=M({color:0xa9b0b8,metalness:0.8,roughness:0.35});
+  add(p,box(1.8,4.4,1.1),am,[2.4,0,s*8.25]);
+  add(p,box(1.8,1.2,0.6),M(MAT.dsteel),[2.4,0,s*8.55]);
+  [1.3,-1.3].forEach(y=>add(p,cylX(0.42,0.42,0.42,6),M(MAT.steel),[2.4,y,s*8.9],[0,Math.PI/2,0]));
+});
+
+/* 19 línea de partición */
+const partP=piece('particion',[0,0,0]);
+const partMat=M({color:0x47d7ff,emissive:0x1aa8ff,emissiveIntensity:0.5,transparent:true,opacity:0.5});
+{
+  const W=BW+0.4,H=BH+0.4,t=0.12;
+  add(partP,box(t,t,W),partMat,[0,H/2,0]); add(partP,box(t,t,W),partMat,[0,-H/2,0]);
+  add(partP,box(t,H,t),partMat,[0,0,W/2]); add(partP,box(t,H,t),partMat,[0,0,-W/2]);
+}
+
+/* 21 puerta */
+const puertaP=piece('puerta',[0,6,12]);
+{
+  add(puertaP,box(15.5,21,0.25),M(MAT.acrylic),[0.5,0.5,11.8]);
+  const fm=M(MAT.dsteel);
+  add(puertaP,box(15.9,0.4,0.4),fm,[0.5,11.1,11.8]); add(puertaP,box(15.9,0.4,0.4),fm,[0.5,-10.1,11.8]);
+  add(puertaP,box(0.4,21,0.4),fm,[-7.25,0.5,11.8]); add(puertaP,box(0.4,21,0.4),fm,[8.25,0.5,11.8]);
+  add(puertaP,box(3,0.6,0.8),M(MAT.black),[0.5,9.6,12.3]);
+}
+
+/* 22 pantalla */
+const pantP=piece('pantalla',[5,6,-5]);
+const screenCanvas=document.createElement('canvas'); screenCanvas.width=512; screenCanvas.height=320;
+const screenTex=new THREE.CanvasTexture(screenCanvas); screenTex.encoding=THREE.sRGBEncoding;
+{
+  add(pantP,box(0.8,26,0.8),M(MAT.black),[12,1.5,-10.5]);
+  const scr=new THREE.Group(); scr.position.set(12,14.5,-10.2); scr.rotation.set(-0.28,0,0); pantP.g.add(scr);
+  add(pantP,box(11,7,0.6),M(MAT.blackm),[0,0,0],null,{parent:scr});
+  add(pantP,new THREE.PlaneGeometry(10.2,6.3),new THREE.MeshBasicMaterial({map:screenTex,clippingPlanes:[cutPlane]}),[0,0,0.31],null,{parent:scr,noHL:true});
+}
+
+/* 20 medalla (crece desde la entrada del bebedero) */
+const medP=piece('medalla',[1,-9,4],{moving:true});
+const medG=new THREE.Group(); medP.g.add(medG);
+const COLD=new THREE.Color(0xeac52c), HOT=new THREE.Color(0xffb44a), HOTE=new THREE.Color(0xff6200);
+const medMain=M({color:0xeac52c,roughness:0.55,transparent:true},[fillPlane]);
+const medMats=[medMain];
+let holePlug, medCracks, medSprue, medLetters;
+{
+  add(medP,toMold(medalGeo(0,GY,MT,true,true)),medMain,[0,0,0],null,{parent:medG,noHL:true});
+  medLetters=new THREE.Group(); medLetters.position.x=MT; medG.add(medLetters);
+  letterGeos(0,GY,LT,0,false).forEach(g=>add(medP,toMold(g),medMain,[0,0,0],null,{parent:medLetters,noHL:true}));
+  holePlug=add(medP,toMold(new THREE.ExtrudeGeometry(holeShape(0,GY,true),{depth:MT,bevelEnabled:false,curveSegments:16})),medMain,[0,0,0],null,{parent:medG,noHL:true}); holePlug.visible=false;
+  medSprue=new THREE.Group(); medG.add(medSprue);
+  add(medP,cylX(0.33,0.445,1.27,16),medMain,[-0.635,0,0],null,{parent:medSprue,noHL:true});
+  add(medP,cylX(0.24,0.28,1.27,14),medMain,[-1.905,0,0],null,{parent:medSprue,noHL:true});
+  medCracks=new THREE.Group(); medG.add(medCracks);
+  const cm=M({color:0x5a2a05,roughness:0.7},[fillPlane]);
+  [[[MT+0.02,-1.2,0.5],1.8,0.5],[[MT+0.02,-2.6,0.1],1.6,-0.7],[[-0.02,-1.2,0.5],1.8,0.5]].forEach(([pos,l,a])=>add(medP,box(0.04,l,0.07),cm,pos,[a,0,0],{parent:medCracks,click:false,noHL:true}));
+  medCracks.visible=false;
+  parts.medalla.mats.push(medMain); medMain.userData.e0=medMain.emissive.clone(); medMain.userData.i0=1;
+}
+
+/* línea de alineación (montaje) */
+const alignG=new THREE.Group(); scene.add(alignG);
+const alignMat=new THREE.MeshBasicMaterial({color:0x4da3ff,transparent:true,opacity:0,clippingPlanes:[cutPlane]});
+const ringA=new THREE.Mesh(new THREE.TorusGeometry(0.75,0.09,8,40),alignMat); ringA.rotation.y=Math.PI/2; alignG.add(ringA);
+const ringB=new THREE.Mesh(new THREE.TorusGeometry(0.75,0.09,8,40),alignMat); ringB.rotation.y=Math.PI/2; alignG.add(ringB);
+const xRings=[];
+[[4.445,2.54],[-4.445,-2.54]].forEach(()=>{ const r=new THREE.Mesh(new THREE.TorusGeometry(0.62,0.1,8,30),new THREE.MeshBasicMaterial({color:0xff5a4a,transparent:true,opacity:0})); r.rotation.y=Math.PI/2; scene.add(r); xRings.push(r); });
+
+/* ---------------- vitrina: muestra inyectada e insertos impresos ---------------- */
+const showG=new THREE.Group(); showG.visible=false; scene.add(showG);
+const SM=o=>new THREE.MeshStandardMaterial(Object.assign({side:THREE.DoubleSide},o));
+const sampleFill=new THREE.Plane(V(0,1,0),1000);
+const sampleMat=SM({color:0xe9c42a,roughness:0.5}); sampleMat.clippingPlanes=[sampleFill];
+const RES={white:{color:0xf2f0ea,roughness:0.62,transparent:false,opacity:1},clear:{color:0xe0952f,roughness:0.18,transparent:true,opacity:0.84}};
+const insMat=SM(Object.assign({metalness:0},RES.white));
+const insFloor=SM({color:0xdcd6ca,roughness:0.7});
+const insDark=SM({color:0x8f897d,roughness:0.75});
+function plateShape(centerHole){
+  const w=IW,h=IH,r=0.381,s=new THREE.Shape();
+  s.moveTo(-w/2+r,-h/2); s.lineTo(w/2-r,-h/2); s.absarc(w/2-r,-h/2+r,r,-Math.PI/2,0,false);
+  s.lineTo(w/2,h/2-r); s.absarc(w/2-r,h/2-r,r,0,Math.PI/2,false);
+  s.lineTo(-w/2+r,h/2); s.absarc(-w/2+r,h/2-r,r,Math.PI/2,Math.PI,false);
+  s.lineTo(-w/2,-h/2+r); s.absarc(-w/2+r,-h/2+r,r,Math.PI,1.5*Math.PI,false);
+  [[2.54,4.445],[-2.54,4.445],[2.54,-4.445],[-2.54,-4.445]].forEach(([x,y])=>{ const p=new THREE.Path(); p.absarc(x,y,0.445,0,Math.PI*2,true); s.holes.push(p); });
+  if(centerHole){ const p=new THREE.Path(); p.absarc(0,0,0.445,0,Math.PI*2,true); s.holes.push(p); }
+  return s;
+}
+const ext=(s,d)=>new THREE.ExtrudeGeometry(s,{depth:d,bevelEnabled:false,curveSegments:28});
+/* medalla de muestra (cara frontal hacia el visitante) */
+const sampleG=new THREE.Group(); sampleG.position.set(0,GY,-0.38); showG.add(sampleG);
+sampleG.add(new THREE.Mesh(medalGeo(0,0,MT,true,true),sampleMat));
+const sLetters=new THREE.Group(); sLetters.position.z=MT; sampleG.add(sLetters);
+letterGeos(0,0,LT,0,false).forEach(g=>sLetters.add(new THREE.Mesh(g,sampleMat)));
+const sPlug=new THREE.Mesh(ext(holeShape(0,0,true),MT),sampleMat); sPlug.visible=false; sampleG.add(sPlug);
+const sSprue=new THREE.Group(); sampleG.add(sSprue);
+{
+  const cz=(r1,r2,l)=>{ const g=new THREE.CylinderGeometry(r1,r2,l,20); g.rotateX(Math.PI/2); return g; };
+  const a=new THREE.Mesh(cz(0.445,0.33,1.27),sampleMat); a.position.set(0,-GY,-0.635); sSprue.add(a);
+  const b=new THREE.Mesh(cz(0.28,0.24,1.27),sampleMat); b.position.set(0,-GY,-1.905); sSprue.add(b);
+  const hair=new THREE.CatmullRomCurve3([V(0,-GY,-2.5),V(0.25,-GY+0.6,-3.2),V(0.9,-GY+1.6,-3.5),V(1.7,-GY+2.3,-3.0),V(2.3,-GY+2.6,-2.2)]);
+  sSprue.add(new THREE.Mesh(new THREE.TubeGeometry(hair,50,0.022,5,false),sampleMat));
+}
+/* inserto A: placa de cavidad */
+const insA=new THREE.Group(); insA.position.set(9.5,0,-0.635); showG.add(insA);
+{
+  insA.add(new THREE.Mesh(ext(plateShape(false),0.762),insMat));
+  const top=plateShape(false); top.holes.push(medalShape(0,GY,false));
+  const t=new THREE.Mesh(ext(top,0.508),insMat); t.position.z=0.762; insA.add(t);
+  const fl=new THREE.Mesh(new THREE.ShapeGeometry(medalShape(0,GY,true),40),insFloor); fl.position.z=0.765; insA.add(fl);
+  letterGeos(0,GY,0.03,0.766,true).forEach(g=>insA.add(new THREE.Mesh(g,insDark)));
+  const v=new THREE.Mesh(ext(holeShape(0,GY,true),0.508),insMat); v.position.z=0.762; insA.add(v);
+  [[2.54,4.445],[-2.54,4.445],[2.54,-4.445],[-2.54,-4.445]].forEach(([x,y])=>{ const r=new THREE.Mesh(new THREE.RingGeometry(0.445,0.6,32),insDark); r.position.set(x,y,1.273); insA.add(r); });
+}
+/* inserto B: placa de cierre con el canal de inyección */
+const insB=new THREE.Group(); insB.position.set(-9.5,0,-0.635); showG.add(insB);
+{
+  insB.add(new THREE.Mesh(ext(plateShape(true),1.27),insMat));
+  const g=new THREE.CylinderGeometry(0.445,0.33,1.27,28,1,true); g.rotateX(Math.PI/2);
+  const c=new THREE.Mesh(g,insDark); c.position.z=0.635; insB.add(c);
+  [[2.54,4.445],[-2.54,4.445],[2.54,-4.445],[-2.54,-4.445]].forEach(([x,y])=>{ const r=new THREE.Mesh(new THREE.RingGeometry(0.445,0.6,32),insDark); r.position.set(x,y,1.273); insB.add(r); });
+}
+
+/* piso */
+const grid=new THREE.GridHelper(220,44,0x2b3442,0x1a212b); grid.position.y=-15.7; grid.material.transparent=true; grid.material.opacity=0.55; scene.add(grid);
+
+/* anclas de etiquetas (posición armada) */
+const ANCH={tolva:[-24,10,0],barril:[-16.5,3.4,0],minibarril:[-8,-1.4,0],valvulas:[-8,3.6,0],resorte:[-42,2.8,0],embolo:[XR-13,3.8,0],
+ boquilla:[-5,-1.1,0],motor:[31.6,12.4,0],guias:[14,9.6,8.6],placas:[-3.54,10.1,6],baseA:[1.9,-6.2,7.6],baseB:[-1.9,-6.2,7.6],
+ cavidad:[0.7,-4.2,3.2],cierre:[-0.7,4.3,3.2],bebedero:[-1.4,0.5,0],particion:[0,6.3,7.6],voladizo:[0.3,0.5,0],tornillos:[0.2,4.445,-2.54],
+ alzas:[2.4,2.3,8.4],medalla:null,puerta:[0.5,11.4,11.8],pantalla:[12,18.3,-11]};
+for(const id in ANCH){ if(ANCH[id]) parts[id].anchor.set(...ANCH[id]); }
+
+/* ---------------- etiquetas HTML ---------------- */
+const labelsEl=$('#labels');
+for(const id in parts){
+  const p=parts[id]; const d=document.createElement('div'); d.className='lab';
+  d.innerHTML='<div class="pill"><b>'+p.num+'</b>'+p.name+'</div><div class="stem"></div><div class="dot"></div>';
+  d.querySelector('.pill').addEventListener('click',e=>{e.stopPropagation(); poke(); selectPart(id);});
+  labelsEl.appendChild(d); p.el=d;
+}
+
+/* ---------------- ciclo ---------------- */
+const CYCLE=[
+ {t:'Carga del material',d:3.0,p:'Los gránulos de LDPE caen por gravedad desde la tolva hacia el barril. Así entra el plástico sólido a la máquina.',hl:['tolva']},
+ {t:'Plastificación',d:3.0,p:'Las bandas calefactoras calientan el barril (200 °C en mi prueba 1) y los gránulos se funden. El LDPE funde entre 105 y 115 °C.',hl:['barril']},
+ {t:'Dosificación',d:2.6,p:'Las válvulas dejan pasar la cantidad justa de plástico fundido hacia el mini barril. En la máquina se ajusta con el parámetro CUT OFF AMOUNT.',hl:['valvulas','minibarril']},
+ {t:'Cierre del molde',d:2.6,p:'El motor gira el tornillo y la placa móvil cierra el molde sobre las guías. Los lados A y B se juntan en la línea de partición (525 kg en mi prueba 1).',hl:['motor','guias','placas','particion']},
+ {t:'Inyección',d:3.2,p:'El resorte se libera y empuja el émbolo: el plástico pasa por la boquilla y el bebedero y llena la cavidad de la medalla (170 bar en mi prueba 1).',hl:['resorte','embolo','boquilla','bebedero','medalla']},
+ {t:'Sostenimiento y enfriamiento',d:3.6,p:'La presión se mantiene mientras la medalla se enfría dentro del molde (a 60 °C). Si se abre antes, las letras quedan ilegibles.',hl:['medalla','cavidad']},
+ {t:'Apertura y extracción',d:3.6,p:'El molde se abre y sale la medalla de LDPE junto con el bebedero. El ciclo real duró 81 s en mi prueba 1; aquí lo ves acelerado.',hl:['baseA','medalla']}
+];
+const S=[0]; CYCLE.forEach(c=>S.push(S[S.length-1]+c.d)); const T=S[S.length-1];
+function stepOf(ct){ let i=0; while(i<6&&ct>=S[i+1]) i++; return i; }
+function cyc(ct){
+  ct=clamp(ct,0,T-1e-4);
+  const i=stepOf(ct), p=clamp((ct-S[i])/CYCLE[i].d);
+  const s={i,p,open:1,xp:XR,heat:1,mini:1,noz:1,sprue:0,fill:0,temp:1,eject:0,pellet:-1,valve:0,glow:0.25,spin:0};
+  switch(i){
+    case 0: s.heat=0; s.mini=0; s.noz=0; s.pellet=p; break;
+    case 1: s.heat=sm(p); s.mini=0; s.noz=0; s.glow=0.25+0.85*Math.sin(Math.PI*clamp(p*1.2)); break;
+    case 2: s.mini=eo(p/0.7); s.noz=clamp((p-0.65)/0.35); s.valve=Math.sin(Math.PI*p); break;
+    case 3: s.open=1-sm(p); s.spin=1; break;
+    case 4: s.open=0; s.xp=lerp(XR,XA,eo(p/0.75)); s.sprue=clamp(p/0.22); s.fill=eo((p-0.16)/0.66); break;
+    case 5: s.open=0; s.xp=XA; s.sprue=1; s.fill=1; s.temp=1-sm(p); break;
+    case 6: s.open=sm(p/0.45); s.xp=lerp(XA,XR,sm(p)); s.sprue=p<0.2?1:0; s.fill=1; s.temp=0; s.eject=clamp((p-0.48)/0.52);
+            s.spin=p<0.45?-1:0; s.mini=1-clamp((p-0.6)/0.4); s.noz=s.mini; s.heat=1-0.75*clamp((p-0.5)/0.5); break;
+  }
+  return s;
+}
+
+/* ---------------- estado global ---------------- */
+let ct=0;                    // tiempo de ciclo
+let mode='run';              // run | step | ajustar
+let route='ciclo', rstep=0;  // paso a paso
+let stepPlay=null;           // {from,to}
+let playAll=false, playAllWait=0;
+let slow=false, cutOn=false, explodeOn=false;
+let E=0, cutC=200;           // factores animados
+let started=false, introT=-1;
+let outcome='ok';            // ok | short | blur | crack
+let presentGoal=0, presentF=0;
+let ajPlaying=false;
+let selected=null;
+let highlight=new Set();
+let lastTouch=performance.now();
+let medVariant={fill:1,blur:false,hole:true,crack:false};
+let insp=[null,null,null,null];
+
+/* montaje */
+const MONT=[
+ {t:'Limpiar el alojamiento',p:'Retira de la base de aluminio los restos de LDPE, polvo o resina de montajes anteriores.',hl:['baseA'],s:{}},
+ {t:'Colocar el inserto',p:'Introduce la placa de cavidad en el alojamiento, con la cavidad hacia la línea de partición. Debe entrar sin forzarla.',hl:['cavidad','particion'],s:{ins:0}},
+ {t:'Dos tornillos en esquinas opuestas',p:'Atornilla el inserto en dos esquinas en diagonal y deja vacíos los otros dos orificios.',hl:['tornillos'],s:{scr:0},warn:true},
+ {t:'Apretar alternado y sin exceso',p:'Aprieta los dos tornillos por turnos, solo hasta que el inserto quede asentado y sin juego. Cada tornillo introduce esfuerzos en la resina.',hl:['tornillos'],s:{spin:1}},
+ {t:'Verificar la alineación',p:'Comprueba que el canal de entrada del inserto coincida con el orificio de inyección del contramolde.',hl:['bebedero','cierre','cavidad'],s:{align:1}},
+ {t:'Colocar la base y atornillar las alzas',p:'Ubica la base con el inserto en la inyectora y aprieta las alzas con una llave de 11 mm hasta que la base quede firme.',hl:['baseA','alzas'],s:{base:0,alz:0,align:0}},
+ {t:'Comprobar el cierre lento',p:'Acerca el contramolde con el cierre lento (Engage Clamp SLOW) y verifica que las dos mitades asienten en la línea de partición sin golpear el inserto.',hl:['placas','particion'],s:{open:0},slow:true},
+ {t:'Cerrar la puerta de protección',p:'Cierra la puerta antes de calentar e inyectar. El molde ya está listo para el primer ciclo.',hl:['puerta'],s:{door:0}}
+];
+const M0={base:1,ins:1,scr:1,spin:0,align:0,alz:1,open:1,door:1};
+let mFrom=Object.assign({},M0), mTo=Object.assign({},M0), mT=1, mDur=1.6;
+let mCur=Object.assign({},M0);
+function montState(k){ const s=Object.assign({},M0); for(let i=0;i<=k;i++) Object.assign(s,MONT[i].s); return s; }
+
+/* inspección */
+const INSP=[
+ {t:'¿Se extrajo completa?',p:'¿La medalla salió de la cavidad sin romperse y sin dañar el inserto?'},
+ {t:'¿Contorno completo?',p:'¿Reproduce el contorno completo de la medalla, sin zonas faltantes?'},
+ {t:'¿Letras legibles?',p:'¿Las letras y los relieves se leen a simple vista?'},
+ {t:'¿Agujero formado?',p:'¿Tiene formado el agujero de la argolla? Lo forma el voladizo del inserto.'},
+ {t:'Clasificación',p:''}
+];
+
+/* ---------------- cámara ---------------- */
+const cam={th:-0.62,ph:1.12,r:92,tx:-5,ty:-1,tz:0}; const camGoal=Object.assign({},cam);
+const CAM={home:{th:-0.62,ph:1.12,r:92,tx:-5,ty:-1,tz:0},
+  mold:{th:-0.78,ph:1.2,r:34,tx:0.5,ty:0,tz:0},
+  mont:{th:-0.5,ph:1.12,r:44,tx:0,ty:1,tz:5},
+  medal:{th:-0.22,ph:1.3,r:24,tx:-2,ty:2.5,tz:7}};
+function camTo(k){ Object.assign(camGoal,CAM[k]); }
+function updCam(dt){
+  const k=1-Math.pow(0.0015,dt);
+  for(const n in cam){ if(n==='th'){ let d=camGoal.th-cam.th; d=Math.atan2(Math.sin(d),Math.cos(d)); cam.th+=d*k; } else cam[n]=lerp(cam[n],camGoal[n],k); }
+  const sp=Math.sin(cam.ph), R=cam.r*Math.max(1,Math.min(1.8,1.15/camera.aspect));
+  camera.position.set(cam.tx+R*sp*Math.sin(cam.th), cam.ty+R*Math.cos(cam.ph), cam.tz+R*sp*Math.cos(cam.th));
+  camera.lookAt(cam.tx,cam.ty,cam.tz);
+}
+
+/* ---------------- entrada táctil ---------------- */
+const ptrs=new Map(); let pinch0=0, r0=0, downInfo=null;
+canvas.addEventListener('pointerdown',e=>{
+  poke(); canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1) downInfo={x:e.clientX,y:e.clientY,t:performance.now(),moved:false};
+  if(ptrs.size===2){ const a=[...ptrs.values()]; pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); r0=camGoal.r; if(downInfo) downInfo.moved=true; }
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)) return;
+  const prev=ptrs.get(e.pointerId); const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){
+    if(downInfo && Math.hypot(e.clientX-downInfo.x,e.clientY-downInfo.y)>8) downInfo.moved=true;
+    if(downInfo&&downInfo.moved){ camGoal.th-=dx*0.006; camGoal.ph=clamp(camGoal.ph-dy*0.005,0.25,1.55); cam.th=camGoal.th; cam.ph=camGoal.ph; }
+  } else if(ptrs.size===2){
+    const a=[...ptrs.values()]; const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    if(pinch0>0){ camGoal.r=clamp(r0*pinch0/d,14,140); cam.r=camGoal.r; }
+  }
+  poke();
+});
+function endPtr(e){
+  if(!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if(ptrs.size===0 && downInfo && !downInfo.moved && performance.now()-downInfo.t<450) tap(e.clientX,e.clientY);
+  if(ptrs.size===0) downInfo=null;
+}
+canvas.addEventListener('pointerup',endPtr); canvas.addEventListener('pointercancel',endPtr);
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); poke(); camGoal.r=clamp(camGoal.r*(1+e.deltaY*0.001),14,140); },{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('pointerdown',()=>poke(),true);
+
+const ray=new THREE.Raycaster(); const ndc=new THREE.Vector2();
+function visibleChain(o){ while(o){ if(!o.visible) return false; o=o.parent; } return true; }
+function tap(x,y){
+  if(!started) return;
+  const rc=canvas.getBoundingClientRect();
+  ndc.set(((x-rc.left)/rc.width)*2-1, -((y-rc.top)/rc.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(clickables,false).filter(h=>visibleChain(h.object)&&h.object.userData.partId&&h.point.z<=cutC+0.05);
+  let h=hits.find(h=>h.object.userData.partId!=='puerta'&&h.object.userData.partId!=='particion')||hits[0];
+  if(h) selectPart(h.object.userData.partId); else closeFicha();
+}
+
+/* ---------------- ficha ---------------- */
+function selectPart(id){
+  selected=id; const p=parts[id];
+  $('#fNum').textContent=p.num; $('#fName').textContent=p.name;
+  let h='';
+  if(p.info.mat&&p.info.mat!=='—') h+='<div><dt>Material</dt><dd>'+p.info.mat+'</dd></div>';
+  h+='<div><dt>Función</dt><dd>'+p.info.fn+'</dd></div>';
+  if(p.info.med) h+='<div><dt>Medidas y datos</dt><dd>'+p.info.med+'</dd></div>';
+  if(p.info.dato) h+='<div><dt>En mis pruebas</dt><dd class="dato">'+p.info.dato+'</dd></div>';
+  if(PART_PLAN[id]) h+='<div><button class="linkb" id="fPlan">Ver plano MH-10'+(PART_PLAN[id]-1)+'</button></div>';
+  $('#fBody').innerHTML=h;
+  if(PART_PLAN[id]){ const n=PART_PLAN[id]; if(n===1) $('#fPlan').textContent='Ver plano de ensamble MH-100'; $('#fPlan').addEventListener('click',()=>openPlanos(n)); }
+  $('#ajustar').hidden=true; $('#ficha').hidden=false;
+  if(sheetState==='min') setSheet('mid'); $('#sheetBody').scrollTop=0;
+}
+function closeFicha(){ selected=null; $('#ficha').hidden=true; if(mode==='ajustar') $('#ajustar').hidden=false; }
+$('#fichaClose').addEventListener('click',closeFicha);
+
+/* ---------------- tarjeta de paso ---------------- */
+function setCard(kicker,n,t,p,total,cur,extra){
+  $('#kicker').textContent=kicker; $('#stepN').textContent=n; $('#stepT').textContent=t; $('#stepP').textContent=p;
+  $('#stepP').hidden=!p;
+  $('#stepExtra').innerHTML=extra||'';
+  const dots=$('#dots'); if(dots.children.length!==total){ dots.innerHTML=''; for(let i=0;i<total;i++) dots.appendChild(document.createElement('i')); }
+  [...dots.children].forEach((d,i)=>{ d.className=i===cur?'on':(i<cur?'done':''); });
+}
+let lastCardKey='';
+function refreshCard(){
+  let key;
+  if(mode==='step'&&route==='montaje'){
+    key='m'+rstep;
+    if(key!==lastCardKey){ const s=MONT[rstep];
+      setCard('Montaje del molde · según mi guía',rstep+1,s.t,s.p,MONT.length,rstep,
+        s.warn?'<div class="warnbox"><b>Advertencia.</b> Nunca sujetes el inserto con 4 tornillos ni con 2 en un mismo lado: hay riesgo de fractura en los orificios de sujeción.</div>':''); }
+  } else if(mode==='step'&&route==='inspeccion'){
+    key='i'+rstep+insp.join(',');
+    if(key!==lastCardKey){
+      const s=INSP[rstep];
+      if(rstep<4){
+        setCard('Inspección de la medalla',rstep+1,s.t,s.p,INSP.length,rstep,
+          '<div class="yn"><button class="si'+(insp[rstep]===true?' sel':'')+'" data-v="1">Sí</button><button class="no'+(insp[rstep]===false?' sel':'')+'" data-v="0">No</button></div>');
+        $('#stepExtra').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ insp[rstep]=b.dataset.v==='1'; applyInspVariant(); lastCardKey=''; refreshCard(); if(rstep<3) setTimeout(()=>{ if(mode==='step'&&route==='inspeccion') goStep(rstep+1); },450); else setTimeout(()=>{ if(mode==='step'&&route==='inspeccion') goStep(4); },450); }));
+      } else {
+        const k=classify();
+        setCard('Inspección de la medalla',5,'Clasificación','',INSP.length,4,'<div class="klass" style="background:'+k.bg+';color:'+k.fg+'">'+k.txt+'</div>');
+      }
+    }
+  } else {
+    const i=stepOf(ct); key='c'+i+mode;
+    if(key!==lastCardKey){ const c=CYCLE[i]; setCard(mode==='ajustar'?'Inyección con tus parámetros':'Ciclo de inyección',i+1,c.t,c.p,CYCLE.length,i); }
+  }
+  lastCardKey=key;
+}
+function classify(){
+  if(insp.some(v=>v===null)) return {txt:'Marca los cuatro criterios para clasificar la medalla.',bg:'rgba(255,255,255,.06)',fg:'#e9edf2'};
+  if(!insp[0]) return {txt:'No extraíble: el inserto falló y la pieza quedó atrapada. Así terminó cada una de mis pruebas.',bg:'rgba(255,107,94,.18)',fg:'#ffd2cd'};
+  if(!insp[1]) return {txt:'Incompleta por falta de llenado. En mi trabajo se registró como falla de la máquina, no del molde.',bg:'rgba(255,178,63,.16)',fg:'#ffe2b3'};
+  if(!insp[3]) return {txt:'Sin agujero: no es funcional porque falló el voladizo. Así salieron 46 piezas de la prueba 1.',bg:'rgba(255,178,63,.16)',fg:'#ffe2b3'};
+  if(!insp[2]) return {txt:'Letras ilegibles: no es funcional. Pasó en la prueba 2 al sacar la pieza antes de enfriar.',bg:'rgba(197,140,255,.16)',fg:'#ead7ff'};
+  return {txt:'✓ Funcional completa: cumple los cuatro criterios. Hubo 3 en la prueba 1 y 8 en la prueba 2.',bg:'rgba(95,211,148,.16)',fg:'#c9f5dc'};
+}
+function applyInspVariant(){
+  medVariant={fill:insp[1]===false?0.6:1, blur:insp[2]===false, hole:insp[3]!==false, crack:insp[0]===false};
+}
+
+/* ---------------- modos ---------------- */
+function setBtn(id,on){ $(id).classList.toggle('on',!!on); }
+function updSpeed(){ $('#slowBadge').hidden=!slow; }
+function leaveMuestra(){ $('#muestra').hidden=true; $('#stepCard').hidden=false; }
+function enterRun(){
+  leaveMuestra(); mode='run'; stepPlay=null; playAll=false; ajPlaying=false; presentGoal=0; outcome='ok';
+  medVariant={fill:1,blur:false,hole:true,crack:false};
+  $('#stepBar').hidden=true; $('#ajustar').hidden=true; setBtn('#bPaso',0); setBtn('#bAjustar',0);
+  highlight=new Set(); lastCardKey=''; camTo('home'); if(typeof secOn==='function') secOn();
+}
+function enterStep(r){
+  leaveMuestra(); mode='step'; route=r||route; playAll=false; ajPlaying=false; outcome='ok';
+  $('#ajustar').hidden=true; setBtn('#bAjustar',0); setBtn('#bPaso',1); $('#stepBar').hidden=false;
+  document.querySelectorAll('#routes button').forEach(b=>b.classList.toggle('on',b.dataset.r===route));
+  const n=route==='ciclo'?CYCLE.length:route==='montaje'?MONT.length:INSP.length;
+  const nums=$('#stepNums'); nums.innerHTML='';
+  for(let i=0;i<n;i++){ const b=document.createElement('button'); b.textContent=i+1; b.addEventListener('click',()=>{playAll=false;updPlayAll();goStep(i);}); nums.appendChild(b); }
+  if(route==='montaje'){ mCur=Object.assign({},M0); mFrom=Object.assign({},M0); mTo=Object.assign({},M0); camTo('mont'); presentGoal=0; }
+  else if(route==='inspeccion'){ insp=[null,null,null,null]; applyInspVariant(); camTo('medal'); presentGoal=1; presentF=0; ct=T-0.001; }
+  else { camTo('home'); presentGoal=0; medVariant={fill:1,blur:false,hole:true,crack:false}; }
+  lastCardKey=''; goStep(0); updPlayAll();
+}
+function goStep(i){
+  const n=route==='ciclo'?CYCLE.length:route==='montaje'?MONT.length:INSP.length;
+  rstep=clamp(i,0,n-1);
+  [...$('#stepNums').children].forEach((b,k)=>b.className=k===rstep?'on':(k<rstep?'done':''));
+  if(route==='ciclo'){ ct=S[rstep]; stepPlay={to:S[rstep+1]-0.001}; highlight=new Set(CYCLE[rstep].hl); }
+  else if(route==='montaje'){
+    mFrom=Object.assign({},mCur); mTo=montState(rstep); mT=0; mDur=MONT[rstep].slow?2.8:1.6; highlight=new Set(MONT[rstep].hl);
+  } else { highlight=new Set(rstep===3?['medalla','voladizo']:['medalla']); }
+  lastCardKey=''; refreshCard();
+}
+function updPlayAll(){ $('#playAllB').textContent=playAll?'❚❚ Pausa':'▶ Todo'; }
+function stepDone(){
+  if(route==='ciclo') return stepPlay && ct>=stepPlay.to;
+  if(route==='montaje') return mT>=1;
+  return true;
+}
+function enterAjustar(){
+  leaveMuestra(); mode='ajustar'; playAll=false; stepPlay=null; $('#stepBar').hidden=true; setBtn('#bPaso',0); setBtn('#bAjustar',1);
+  closeFichaSilent(); $('#ajustar').hidden=false; highlight=new Set(); camTo('mold'); lastCardKey='';
+  ct=S[3]; presentGoal=0; outcome='ok'; medVariant={fill:1,blur:false,hole:true,crack:false};
+}
+function closeFichaSilent(){ selected=null; $('#ficha').hidden=true; }
+
+$('#bCortar').addEventListener('click',()=>{ if(mode==='muestra') enterRun(); cutOn=!cutOn; setBtn('#bCortar',cutOn); });
+$('#bDesarmar').addEventListener('click',()=>{ if(mode==='muestra') enterRun(); explodeOn=!explodeOn; setBtn('#bDesarmar',explodeOn); if(explodeOn&&mode==='run'){ camGoal.r=Math.max(camGoal.r,112); } });
+$('#bLenta').addEventListener('click',()=>{ if(mode==='muestra') enterRun(); slow=!slow; setBtn('#bLenta',slow); updSpeed(); });
+$('#bPaso').addEventListener('click',()=>{ if(mode==='step') enterRun(); else enterStep('ciclo'); });
+$('#bAjustar').addEventListener('click',()=>{ if(mode==='ajustar') enterRun(); else enterAjustar(); });
+$('#ajClose').addEventListener('click',enterRun);
+$('#resClose').addEventListener('click',()=>{ $('#results').hidden=true; secOn(); });
+$('#results').addEventListener('click',e=>{ if(e.target.id==='results'){ $('#results').hidden=true; secOn(); } });
+document.querySelectorAll('#routes button').forEach(b=>b.addEventListener('click',()=>enterStep(b.dataset.r)));
+$('#prevB').addEventListener('click',()=>{ playAll=false; updPlayAll(); if(rstep===0) return; if(route==='montaje'){ mCur=montStateIdx(rstep-2); } goStep(rstep-1); });
+$('#nextB').addEventListener('click',()=>{ playAll=false; updPlayAll(); goStep(rstep+1); });
+$('#playAllB').addEventListener('click',()=>{ playAll=!playAll; updPlayAll(); if(playAll){ playAllWait=0; if(route==='inspeccion'){ playAll=false; updPlayAll(); } else if(route==='montaje'){ mCur=Object.assign({},M0); goStep(0);} else goStep(0); } });
+function montStateIdx(k){ return k<0?Object.assign({},M0):montState(k); }
+
+/* ---- ajustar ---- */
+const sT=$('#sT'), sP=$('#sP'), sC=$('#sC');
+function updSliders(){
+  [[sT,'#oT',' °C'],[sP,'#oP',' bar'],[sC,'#oC',' s']].forEach(([s,o,u])=>{ $(o).textContent=s.value+u; s.style.setProperty('--p',((s.value-s.min)/(s.max-s.min)*100)+'%'); });
+  drawScreen();
+}
+[sT,sP,sC].forEach(s=>s.addEventListener('input',()=>{ updSliders(); $('#resultado').hidden=true; }));
+$('#btnReset').addEventListener('click',()=>{ sT.value=200; sP.value=170; sC.value=81; updSliders(); $('#resultado').hidden=true; });
+function evaluate(){
+  const t=+sT.value, p=+sP.value, c=+sC.value;
+  if(p>200) return {k:'crack',title:'Inserto agrietado',col:'var(--bad)',cause:'La presión es demasiado alta para la resina: el inserto se rompe de forma frágil, sin deformarse antes, y la medalla queda atrapada.',mine:'En la prueba 3, con una medalla más grande (14.96 cm³), el inserto falló en el primer ciclo.'};
+  if(t>230) return {k:'crack',title:'Inserto agrietado',col:'var(--bad)',cause:'El barril supera por mucho los 200 °C que fija mi guía para Sculpt Ultra White y se acerca a su HDT de 250 °C: el inserto pierde resistencia y se fractura.',mine:'Por eso mi guía limita el barril a 200 °C con Ultra White y a 170 °C con la resina transparente.'};
+  if(t<155) return {k:'short',title:'Pieza incompleta',col:'var(--warn)',cause:'El plástico está demasiado frío y espeso: se solidifica antes de llenar toda la cavidad.',mine:'En la prueba 1, las primeras 4 muestras salieron incompletas mientras se ajustaba la máquina.'};
+  if(p<60) return {k:'short',title:'Pieza incompleta',col:'var(--warn)',cause:'La presión no alcanza para empujar el plástico hasta el fondo de la cavidad.',mine:'En la prueba 1, las primeras 4 muestras salieron incompletas mientras se ajustaba la máquina.'};
+  if(c<65) return {k:'blur',title:'Letras borrosas',col:'#c58cff',cause:'El molde se abrió antes de que la medalla terminara de enfriarse, y los detalles finos se deformaron al sacarla.',mine:'En la prueba 2, la muestra 9 salió con letras ilegibles por retirarla antes de completar el enfriamiento.'};
+  if(t>200) return {k:'ok',title:'Pieza completa, pero con riesgo',col:'var(--warn)',cause:'La medalla sale, pero el barril supera los 200 °C que mi guía fija como máximo para Sculpt Ultra White y el margen respecto a su HDT se reduce.',mine:'En mis pruebas nunca se superó ese límite.'};
+  const near=Math.abs(t-200)<=10&&Math.abs(p-170)<=15&&Math.abs(c-81)<=6;
+  return {k:'ok',title:'Pieza completa',col:'var(--ok)',cause:'La temperatura, la presión y el tiempo de enfriamiento están en un rango que funcionó.',mine:near?'Con 200 °C, 170 bar y 81 s salieron las medallas de mi prueba 1.':'En la prueba 2 también salieron medallas completas con el barril a 160–170 °C y 65 bar.'};
+}
+let pendingResult=null;
+$('#btnInyectar').addEventListener('click',()=>{
+  const r=evaluate(); pendingResult=r; outcome=r.k;
+  medVariant={fill:r.k==='short'?0.6:1, blur:r.k==='blur', hole:true, crack:false};
+  ct=S[3]; ajPlaying=true; presentGoal=0; presentF=0; $('#resultado').hidden=true; $('#btnInyectar').disabled=true;
+  camTo('mold'); lastCardKey='';
+});
+function showResult(){
+  const r=pendingResult; if(!r) return;
+  const el=$('#resultado');
+  el.innerHTML='<div class="rt"><i style="background:'+r.col+'"></i>'+r.title+'</div><p>'+r.cause+'</p><p class="mine">'+r.mine+'</p>';
+  el.hidden=false; $('#btnInyectar').disabled=false; try{ el.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){}
+}
+
+/* ---------------- secciones: muestra, planos, guía, fotos ---------------- */
+const PHOTOS=[
+ {f:'medalla',c:'Medalla funcional completa de LDPE, con el bebedero todavía unido sobre la argolla.'},
+ {f:'muestras50',c:'Muestras numeradas de la prueba 1: cada pieza conserva su bebedero y algunos hilos finos de LDPE.'},
+ {f:'voladizo',c:'De izquierda a derecha: piezas incompletas del ajuste, medallas completas y, al final, medallas después de la ruptura del voladizo, con un fragmento blanco de resina en la argolla.'},
+ {f:'astillas',c:'Inserto de Sculpt Ultra White montado en la base: grietas y astillado alrededor de la cavidad.'},
+ {f:'transparente',c:'Inserto de resina transparente en la base de aluminio, con la medalla y el bebedero dentro de la cavidad.'},
+ {f:'prueba3',c:'Prueba 3, medalla de 50.8 mm: el inserto falló en el primer ciclo.'}
+];
+const PLANS=[
+ {t:'Ensamble',c:'MH-100 · Hoja 1: vista explosionada del molde y lista de partes con sus materiales.',go:'explode'},
+ {t:'Porta molde lado B',c:'MH-101 · Base de aluminio 6.00 × 4.80 × 1.00 in con el orificio de inyección y el alojamiento de 2.560 × 4.020 in.',go:'baseB'},
+ {t:'Porta molde lado A',c:'MH-102 · Base de aluminio que aloja la placa de cavidad; mismo alojamiento de 2.560 × 4.020 in.',go:'baseA'},
+ {t:'Inserto lado B',c:'MH-103 · Placa de cierre de 2.500 × 4.000 × 0.50 in con el canal cónico de Ø.26 a Ø.35 in.',go:'B'},
+ {t:'Inserto lado A',c:'MH-104 · Placa de cavidad con la medalla en espejo y cuatro orificios de Ø.35 in.',go:'A'},
+ {t:'Medalla',c:'MH-105 · Geometría de referencia de la cavidad: alto total 1.86 in, espesor .30 in y 2° de desmoldeo.',go:'medalla'}
+];
+const PART_PLAN={baseB:2,baseA:3,cierre:4,bebedero:4,cavidad:5,voladizo:5,medalla:6,tornillos:1};
+const MU={
+ todo:{h:'<b>Las piezas que imprimí y la pieza que sale del molde.</b> A la izquierda, la placa de cierre (inserto B) con el canal de entrada; al centro, la medalla de LDPE; a la derecha, la placa de cavidad (inserto A) con la medalla en espejo.',d:'',plan:1,cam:{x:0,y:0,r:40}},
+ medalla:{h:'<b>Medalla de LDPE (MH-105).</b> Así sale de la máquina: con el bebedero unido detrás de la argolla, donde estaba el orificio de inyección, y las letras UVG en relieve.',d:'Alto total 1.86 in (47.2 mm) · espesor .30 in (7.6 mm) · desmoldeo 2°',plan:6,cam:{x:0,y:GY+0.6,r:14}},
+ A:{h:'<b>Inserto lado A con la cavidad (MH-104).</b> La medalla está en espejo para que las letras salgan al derecho. El voladizo en forma de D es el que forma el agujero de la argolla.',d:'2.500 × 4.000 × 0.50 in · 4 orificios Ø.35 in con caja Ø.58 in',plan:5,cam:{x:9.5,y:0,r:22}},
+ B:{h:'<b>Inserto lado B con el orificio de inyección (MH-103).</b> El canal cónico lleva el plástico desde la boquilla hasta la medalla.',d:'2.500 × 4.000 × 0.50 in · canal de Ø.26 a Ø.35 in a 10°',plan:4,cam:{x:-9.5,y:0,r:22}}
+};
+let muView='todo', muVar='ok', muRes='white';
+function showCamFor(v){
+  const c=MU[v].cam, asp=camera.aspect, fov=(asp<1?52:38)*Math.PI/180;
+  const vh=2*Math.tan(fov/2)*c.r, vw=vh*asp; let tx=c.x, ty=c.y;
+  Object.assign(camGoal,{th:0.1,ph:1.36,r:c.r,tx,ty,tz:0});
+}
+function setMuView(v){
+  muView=v; document.querySelectorAll('#muView button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  const m=MU[v];
+  $('#muInfo').innerHTML=m.h+(m.d?'<div class="dims">'+m.d+'</div>':'')+'<div><button class="linkb" id="muPlan">Ver plano MH-10'+(m.plan-1)+'</button></div>';
+  if(m.plan===1) $('#muPlan').textContent='Ver plano de ensamble MH-100';
+  $('#muPlan').addEventListener('click',()=>openPlanos(m.plan));
+  $('#muVarWrap').hidden=!(v==='todo'||v==='medalla'); $('#muResWrap').hidden=(v==='medalla');
+  showCamFor(v);
+}
+function setMuVar(k){
+  muVar=k; document.querySelectorAll('#muVar button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  sampleFill.constant=k==='short'?-(GY-0.3):1000; sPlug.visible=k==='hole'; sLetters.scale.z=k==='blur'?0.25:1;
+}
+function setMuRes(k){
+  muRes=k; document.querySelectorAll('#muRes button').forEach(b=>b.classList.toggle('on',b.dataset.r===k));
+  insMat.setValues(RES[k]); insMat.needsUpdate=true;
+  insFloor.color.setHex(k==='white'?0xdcd6ca:0xb86f1e); insDark.color.setHex(k==='white'?0x8f897d:0x5e3208);
+}
+function secOn(){ document.querySelectorAll('#secnav button').forEach(b=>b.classList.toggle('on',
+  (b.dataset.sec==='muestra'&&mode==='muestra')||(b.dataset.sec==='resultados'&&!$('#results').hidden)||(b.dataset.sec==='planos'&&!$('#planos').hidden)||(b.dataset.sec==='guia'&&!$('#guia').hidden)||(b.dataset.sec==='guiadoc'&&!$('#guiaDoc').hidden))); }
+function enterMuestra(v){
+  closeOverlays();
+  enterRun(); mode='muestra'; closeFichaSilent();
+  $('#stepCard').hidden=true; $('#muestra').hidden=false;
+  setMuView(v||'todo'); setMuVar(muVar); setMuRes(muRes); secOn();
+}
+document.querySelectorAll('#muView button').forEach(b=>b.addEventListener('click',()=>setMuView(b.dataset.v)));
+document.querySelectorAll('#muVar button').forEach(b=>b.addEventListener('click',()=>setMuVar(b.dataset.k)));
+document.querySelectorAll('#muRes button').forEach(b=>b.addEventListener('click',()=>setMuRes(b.dataset.r)));
+$('#muSprue').addEventListener('click',()=>{ sSprue.visible=!sSprue.visible; $('#muSprue').textContent=sSprue.visible?'Bebedero: unido':'Bebedero: recortado'; });
+$('#muClose').addEventListener('click',()=>{ enterRun(); });
+// fotos
+let lbI=0;
+PHOTOS.forEach((p,i)=>{ const b=document.createElement('button'); b.innerHTML='<img src="img/'+p.f+'_t.jpg" alt="">'; b.addEventListener('click',()=>openLb(i)); $('#muPhotos').appendChild(b); });
+function openLb(i){ lbI=(i+PHOTOS.length)%PHOTOS.length; $('#lbImg').src='img/'+PHOTOS[lbI].f+'.jpg'; $('#lbCap').textContent=PHOTOS[lbI].c; $('#lightbox').hidden=false; }
+$('#lbClose').addEventListener('click',()=>$('#lightbox').hidden=true);
+$('#lbPrev').addEventListener('click',()=>openLb(lbI-1)); $('#lbNext').addEventListener('click',()=>openLb(lbI+1));
+// planos
+let plI=1, plZ=0;
+PLANS.forEach((p,i)=>{ const b=document.createElement('button'); b.innerHTML='<b>'+(i+1)+'</b>'+p.t; b.addEventListener('click',()=>showPlan(i+1)); $('#plTabs').appendChild(b); });
+function setZoom(z){ plZ=z; const v=$('#plView'), img=$('#plImg'); v.classList.toggle('fit',z===0); img.style.width=z===2?'200%':''; img.style.maxWidth=z===2?'none':''; $('#plZoom').textContent=z===0?'Ampliar':z===1?'Ampliar más':'Ver completo'; }
+function showPlan(n){ plI=n; [...$('#plTabs').children].forEach((b,i)=>b.classList.toggle('on',i===n-1)); $('#plImg').src='img/plano'+n+'.jpg'; $('#plCap').textContent=PLANS[n-1].c; setZoom(1); $('#plView').scrollTo(0,0); }
+function openPlanos(n){ closeOverlays(); $('#planos').hidden=false; showPlan(n||1); secOn(); }
+$('#plZoom').addEventListener('click',()=>setZoom((plZ+1)%3));
+$('#plImg').addEventListener('dblclick',()=>setZoom(plZ===0?1:0));
+$('#plClose').addEventListener('click',()=>{ $('#planos').hidden=true; secOn(); });
+$('#pl3d').addEventListener('click',()=>{
+  const g=PLANS[plI-1].go; $('#planos').hidden=true;
+  if(g==='explode'){ enterRun(); explodeOn=true; setBtn('#bDesarmar',1); camGoal.r=112; }
+  else if(g==='baseA'||g==='baseB'){ enterRun(); camTo('mold'); selectPart(g); }
+  else enterMuestra(g);
+  secOn();
+});
+// guía
+const gSecs=[...document.querySelectorAll('#gBody section')];
+gSecs.forEach((s,i)=>{ const b=document.createElement('button'); b.innerHTML='<b>'+(i===0?'▶':i)+'</b>'+s.dataset.t; b.addEventListener('click',()=>showGuia(i)); $('#gNav').appendChild(b); });
+function showGuia(i){ gSecs.forEach((s,k)=>s.classList.toggle('on',k===i)); [...$('#gNav').children].forEach((b,k)=>b.classList.toggle('on',k===i)); $('#gBody').scrollTo(0,0); }
+function openGuia(i){ closeOverlays(); $('#guia').hidden=false; showGuia(i||0); secOn(); }
+$('#gClose').addEventListener('click',()=>{ $('#guia').hidden=true; secOn(); });
+document.querySelectorAll('#gBody [data-go]').forEach(b=>b.addEventListener('click',()=>{
+  const g=b.dataset.go; $('#guia').hidden=true;
+  if(g==='muestraA') enterMuestra('A'); else if(g==='montaje'){ enterStep('montaje'); } else if(g==='inspeccion'){ enterStep('inspeccion'); } else if(g==='ajustar') enterAjustar();
+  secOn();
+}));
+function closeOverlays(){ ['#results','#planos','#guia','#guiaDoc','#lightbox'].forEach(s=>$(s).hidden=true); }
+document.querySelectorAll('#secnav button').forEach(b=>b.addEventListener('click',()=>{
+  poke(); const s=b.dataset.sec;
+  if(s==='resultados'){ const was=!$('#results').hidden; closeOverlays(); $('#results').hidden=was; }
+  else if(s==='muestra'){ if(mode==='muestra') enterRun(); else enterMuestra('todo'); }
+  else if(s==='planos'){ if(!$('#planos').hidden){ $('#planos').hidden=true; } else openPlanos(1); }
+  else if(s==='guia'){ if(!$('#guia').hidden){ $('#guia').hidden=true; } else openGuia(0); }
+  else if(s==='guiadoc'){ if(!$('#guiaDoc').hidden){ $('#guiaDoc').hidden=true; } else openGuiaDoc(1); }
+  secOn();
+}));
+['#planos','#guia'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target===$(id)){ $(id).hidden=true; secOn(); } }));
+
+/* ---- guía completa (páginas) ---- */
+const GD_N=62;
+const GD_TABS=[['Portada',1],['Índice',2],['1 Introducción',6],['2 Equipo y materiales',12],['3 Diseño del inserto',18],['4 Impresión',24],['5 Montaje',31],['6 Inyección',34],['7 Inspección y retiro',40],['Referencias',44],['Anexos',46]];
+let gdP=1, gdZ=0;
+GD_TABS.forEach(([t,p])=>{ const b=document.createElement('button'); b.textContent=t; b.dataset.p=p; b.addEventListener('click',()=>gdShow(p)); $('#gdTabs').appendChild(b); });
+function gdShow(p){
+  gdP=clamp(p,1,GD_N); $('#gdImg').src='guia/p-'+String(gdP).padStart(2,'0')+'.jpg'; $('#gdPg').textContent='Página '+gdP+' de '+GD_N;
+  let cur=GD_TABS[0][1]; GD_TABS.forEach(([t,q])=>{ if(gdP>=q) cur=q; });
+  [...$('#gdTabs').children].forEach(b=>b.classList.toggle('on',+b.dataset.p===cur));
+  $('#gdView').scrollTo(0,0);
+  if(gdP<GD_N){ const im=new Image(); im.src='guia/p-'+String(gdP+1).padStart(2,'0')+'.jpg'; }
+}
+function gdSetZoom(z){ gdZ=z; $('#gdView').classList.toggle('fit',z===0); $('#gdImg').style.width=z===2?'180%':''; $('#gdImg').style.maxWidth=z===2?'none':''; $('#gdZoom').textContent=z===0?'Ampliar':z===1?'Ampliar más':'Ver completa'; }
+function openGuiaDoc(p){ closeOverlays(); $('#guiaDoc').hidden=false; gdSetZoom(window.innerWidth>900?0:1); gdShow(p||1); secOn(); }
+$('#gdPrev').addEventListener('click',()=>gdShow(gdP-1)); $('#gdNext').addEventListener('click',()=>gdShow(gdP+1));
+$('#gdZoom').addEventListener('click',()=>gdSetZoom((gdZ+1)%3));
+$('#gdClose').addEventListener('click',()=>{ $('#guiaDoc').hidden=true; secOn(); });
+$('#guiaDoc').addEventListener('click',e=>{ if(e.target===$('#guiaDoc')){ $('#guiaDoc').hidden=true; secOn(); } });
+document.addEventListener('keydown',e=>{ if($('#guiaDoc').hidden) return; if(e.key==='ArrowRight') gdShow(gdP+1); if(e.key==='ArrowLeft') gdShow(gdP-1); });
+// swipe horizontal para cambiar de página cuando la página se ve completa
+{ let sx=0, sy=0; const v=$('#gdView');
+  v.addEventListener('touchstart',e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
+  v.addEventListener('touchend',e=>{ if(gdZ!==0) return; const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5) gdShow(gdP+(dx<0?1:-1)); },{passive:true}); }
+
+/* ---- paso a paso (Figura 2 de la guía) ---- */
+const FLOW=[
+ {k:'term',n:'▶',t:'Inicio: definir la pieza',sec:'Cap. 1',p:6,d:'<ul><li>Define la geometría, las características y los requerimientos de la pieza.</li><li>Define cuántas piezas necesitas y planifica con la <b>vida funcional</b> del inserto, no con las piezas extraíbles.</li></ul>'},
+ {n:'2',t:'Conseguir materiales y preparar la base',sec:'Sección 2.2',p:13,d:'<ul><li>Resina recomendada: <b>Sculpt Ultra White</b> (HDT 250 °C); alternativa: High Temperature transparente.</li><li>Polímero: <b>LDPE</b>, código de resina 4.</li><li>Fabrica la base de aluminio según los planos MH-101 y MH-102, o verifica una existente, y revisa que el contramolde esté instalado en la inyectora.</li></ul>',acts:[['Ver planos de la base','plan2']]},
+ {n:'3',t:'Diseñar el inserto en CAD',sec:'Cap. 3',p:18,d:'<ul><li>Parte del plano base del inserto, modela la pieza con 2° de desmoldeo y réstala de la placa.</li><li>Revisa que el texto quede en espejo y exporta la placa de cavidad y la placa de cierre en STL.</li></ul>',acts:[['Ver el inserto A en 3D','muA'],['Ver plano MH-104','plan5']]},
+ {k:'dec',n:'4',t:'¿El diseño cumple los criterios?',sec:'Sección 3.1',p:18,d:'<ul><li>Desmoldeo de 2° o más en toda la cavidad.</li><li>Sin voladizos delgados; si hay agujero, voladizo en arco.</li><li>Pieza del orden de la medalla de 38.1 mm para un primer inserto.</li><li>Al menos 1 mm de material entre cada orificio y el borde.</li></ul>',loop:'Si no cumple, vuelve al paso 3.'},
+ {n:'5',t:'Imprimir y post-procesar las dos placas',sec:'Cap. 4',p:24,d:'<ul><li>Capa de 0.050 mm, orientación diagonal a 45°, soportes en la cara opuesta a la cavidad; resina a 25–30 °C.</li><li>Lavar 4–5 min en alcohol, secar a ≤80 °C, retirar soportes y post-curar ~15 min con UV de 395–405 nm.</li></ul>'},
+ {k:'dec',n:'6',t:'¿El inserto está completo, sin grietas y ajusta en la base?',sec:'Sección 4.3',p:27,d:'<ul><li>Revisa la cavidad, el canal de entrada y los orificios de sujeción.</li><li>Prueba que entre en el alojamiento sin forzarlo.</li></ul>',loop:'Si no, vuelve al paso 5 e imprime de nuevo.'},
+ {n:'7',t:'Montar el inserto y la base',sec:'Cap. 5',p:31,d:'<ul><li>Dos tornillos en <b>esquinas opuestas</b>, apretados de forma alternada y sin exceso.</li><li>Sujeta la base con las alzas (llave de 11 mm), comprueba el cierre lento y cierra la puerta.</li></ul>',acts:[['Ver el montaje animado','montaje']]},
+ {n:'8',t:'Ingresar parámetros y hacer los primeros ciclos',sec:'Secciones 6.1 y 6.4',p:34,d:'<ul><li>Ultra White: barril 200 °C, molde 60 °C, 170 bar, cierre 525 kg, ciclo 81 s.</li><li>Calienta (HEAT) y ejecuta un ciclo en modo SINGLE.</li></ul>',acts:[['Probar parámetros','ajustar'],['Ver el ciclo','ciclo']]},
+ {k:'dec',n:'9',t:'¿Sale una pieza extraíble?',sec:'Sección 6.4',p:39,d:'<ul><li>Si no sale material, ajusta CUT OFF AMOUNT y las válvulas.</li><li>Si sale incompleta, revisa la alimentación del hopper.</li></ul>',loop:'Si no, vuelve al paso 8.'},
+ {n:'10',t:'Inyectar con parámetros fijos e inspeccionar cada pieza',sec:'Cap. 7',p:40,d:'<ul><li>Mantén constantes los parámetros desde la primera pieza extraíble.</li><li>Revisa cada pieza con los 4 criterios y registra cada ciclo.</li></ul>',acts:[['Practicar la inspección','inspeccion']]},
+ {k:'dec',n:'11',t:'¿La pieza es funcional y el inserto no tiene daño?',sec:'Secciones 1.4 y 7.2',p:41,d:'<ul><li>Señales para parar: agujero no formado, voladizo roto, grieta visible, LDPE hacia los tornillos.</li></ul>',loop:'Si sí, sigue inyectando (vuelve al paso 10). Si no, pasa al paso 12.'},
+ {n:'12',t:'Retirar el inserto y registrar',sec:'Sección 7.3',p:42,d:'<ul><li>Detén la inyectora y deja enfriar el molde; quita los dos tornillos.</li><li>Limpia el alojamiento y registra la vida funcional o la vida útil y la causa de la falla.</li></ul>'},
+ {k:'term',n:'■',t:'Fin: reportar los resultados',sec:'',p:44,d:'<ul><li>Reporta las piezas obtenidas y la vida del inserto para planificar la siguiente práctica.</li></ul>'}
+];
+FLOW.forEach((s,i)=>{
+  if(i) { const a=document.createElement('div'); a.className='farrow'; $('#flow').appendChild(a); }
+  const d=document.createElement('div'); d.className='fnode'+(s.k?' '+s.k:'');
+  d.innerHTML='<button><span class="ic"><span>'+s.n+'</span></span><span>'+s.t+'</span><span class="sec">'+s.sec+'</span></button><div class="fdet">'+s.d+(s.loop?'<div class="loop">↺ '+s.loop+'</div>':'')+
+    '<div class="acts"><button class="linkb" data-gp="'+s.p+'">Ver en la guía · p. '+s.p+'</button>'+(s.acts||[]).map(a=>'<button class="linkb" data-fa="'+a[1]+'">'+a[0]+'</button>').join('')+'</div></div>';
+  d.querySelector('button').addEventListener('click',()=>{ const o=d.classList.contains('open'); document.querySelectorAll('.fnode').forEach(n=>n.classList.remove('open')); if(!o) d.classList.add('open'); });
+  d.querySelector('[data-gp]').addEventListener('click',()=>openGuiaDoc(s.p));
+  d.querySelectorAll('[data-fa]').forEach(b=>b.addEventListener('click',()=>{
+    const a=b.dataset.fa; $('#guia').hidden=true;
+    if(a.startsWith('plan')) openPlanos(+a.slice(4));
+    else if(a==='muA') enterMuestra('A');
+    else if(a==='montaje'||a==='inspeccion'||a==='ciclo') enterStep(a);
+    else if(a==='ajustar') enterAjustar();
+    secOn();
+  }));
+  $('#flow').appendChild(d);
+});
+$('#gFull').addEventListener('click',()=>openGuiaDoc(1));
+
+/* ---------------- PhoneV: hoja inferior, pestañas, embebido ---------------- */
+let sheetState='mid';
+['#ficha','#ajustar','#stepCard','#stepBar','#bar','#muestra'].forEach(s=>$('#sheetBody').appendChild($(s)));
+$('#bAjustar').addEventListener('click',()=>{ $('#sheetBody').scrollTop=0; });
+function setSheet(s){ sheetState=s; resize(); }
+{ let y0=null; const hd=$('#handle');
+  hd.addEventListener('pointerdown',e=>{ y0=e.clientY; hd.setPointerCapture(e.pointerId); });
+  hd.addEventListener('pointerup',e=>{ if(y0===null) return; const dy=e.clientY-y0; y0=null; const order=['min','mid','max']; let i=order.indexOf(sheetState);
+    if(Math.abs(dy)<8) i=(i+1)%3; else i=clamp(i+(dy<0?1:-1),0,2); setSheet(order[i]); });
+}
+function openTab(t){
+  poke();
+  if(t==='maq'){ closeOverlays(); if(mode!=='run'&&mode!=='ajustar') enterRun(); if(sheetState==='min') setSheet('mid'); }
+  else if(t==='paso'){ closeOverlays(); if(mode!=='step') enterStep('ciclo'); if(sheetState==='min') setSheet('mid'); }
+  else if(t==='muestra'){ closeOverlays(); if(mode!=='muestra') enterMuestra('todo'); if(sheetState==='min') setSheet('mid'); }
+  else if(t==='planos'){ if($('#planos').hidden) openPlanos(1); }
+  else if(t==='guia'){ if($('#guia').hidden&&$('#guiaDoc').hidden) openGuia(0); }
+  $('#sheetBody').scrollTop=0;
+}
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>openTab(b.dataset.tab)));
+let tabKey='';
+function syncTabs(){
+  const t=!$('#planos').hidden?'planos':(!$('#guia').hidden||!$('#guiaDoc').hidden)?'guia':mode==='step'?'paso':mode==='muestra'?'muestra':'maq';
+  const k=t+mode;
+  if(k===tabKey) return; tabKey=k;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('#bar').hidden=(mode==='step'||mode==='muestra');
+}
+$('#bRes').addEventListener('click',()=>{ closeOverlays(); $('#results').hidden=false; });
+$('#homeB').addEventListener('click',()=>{ resetAll(); });
+{ const d=document, el=d.documentElement, fsOk=!!(d.fullscreenEnabled||d.webkitFullscreenEnabled)&&!!(el.requestFullscreen||el.webkitRequestFullscreen);
+  $('#fsB').hidden=!fsOk;
+  $('#fsB').addEventListener('click',()=>{ try{ if(d.fullscreenElement||d.webkitFullscreenElement){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); } else { const p=(el.requestFullscreen||el.webkitRequestFullscreen).call(el); if(p&&p.catch) p.catch(()=>{}); } }catch(e){} });
+  ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>d.addEventListener(ev,()=>setTimeout(resize,200)));
+}
+// abierto dentro de Canva (Insertar): ocultar encabezado y ofrecer pantalla completa
+const PHONEV_URL=location.href.split('#')[0];
+{
+  let anc=[]; try{ anc=[...(location.ancestorOrigins||[])]; }catch(e){}
+  const inCanva=location.hash==='#canva'||anc.some(o=>/canva/i.test(o))||/canva/i.test(document.referrer||'');
+  if(inCanva){ $('#top').hidden=true; const a=$('#fsLink'); a.href=PHONEV_URL; a.hidden=PHONEV_URL.indexOf('__')===0; }
+}
+
+/* ---- pantalla de la máquina ---- */
+function drawScreen(){
+  const c=screenCanvas.getContext('2d');
+  c.fillStyle='#0d1b2a'; c.fillRect(0,0,512,320);
+  c.fillStyle='#1e3a5f'; c.fillRect(0,0,512,54);
+  c.fillStyle='#e6f0ff'; c.font='700 30px "IBM Plex Sans",Arial'; c.fillText('APSX-PIM',20,38);
+  c.fillStyle='#ffd34d'; c.font='600 22px "IBM Plex Mono",monospace'; c.fillText('LDPE',420,36);
+  const rows=[['Barril',sT.value+' °C'],['Molde','60 °C'],['Presión',sP.value+' bar'],['Cierre','525 kg'],['Ciclo',sC.value+' s']];
+  c.font='500 26px "IBM Plex Mono",monospace';
+  rows.forEach((r,i)=>{ c.fillStyle='#8fb1d9'; c.fillText(r[0],24,98+i*44); c.fillStyle='#ffffff'; c.fillText(r[1],250,98+i*44); });
+  screenTex.needsUpdate=true;
+}
+
+/* ---------------- intro y reinicio ---------------- */
+function scatterAll(){
+  pieces.forEach((p,i)=>{
+    const a=Math.random()*Math.PI*2, b=(Math.random()-0.3)*1.2, R=55+Math.random()*30;
+    p.scatter.set(Math.cos(a)*Math.cos(b)*R, Math.sin(b)*R+20, Math.sin(a)*Math.cos(b)*R);
+    p.delay=i*0.035+Math.random()*0.25;
+  });
+}
+function intro(t){ return t<0?1:0; }
+function resetAll(){
+  $('#start').classList.remove('hide'); started=false; introT=-1;
+  enterRun(); cutOn=false; explodeOn=false; slow=false; setBtn('#bCortar',0); setBtn('#bDesarmar',0); setBtn('#bLenta',0); updSpeed();
+  closeFichaSilent(); closeOverlays(); secOn(); ct=0; E=0;
+  sT.value=200; sP.value=170; sC.value=81; updSliders(); $('#resultado').hidden=true; $('#btnInyectar').disabled=false;
+  Object.assign(cam,CAM.home); cam.r=125; camTo('home'); scatterAll();
+}
+$('#goBtn').addEventListener('click',()=>{ $('#start').classList.add('hide'); started=true; introT=0; poke(); });
+$('#start').addEventListener('click',e=>{ if(e.target.id!=='goBtn'&&!started){ $('#goBtn').click(); } });
+function poke(){ lastTouch=performance.now(); }
+
+/* ---------------- resize ---------------- */
+function resize(){
+  const w=window.innerWidth,h=window.innerHeight, land=w>h&&h<600;
+  document.body.classList.toggle('land',land);
+  const tabH=$('#tabs').offsetHeight; let cw=w, ch=h-tabH;
+  const sh=$('#sheet');
+  $('#top').style.right='0px'; $('#fsLink').style.right='10px';
+  if(land){ const sw=Math.min(430,Math.round(w*0.46)); sh.style.width=sw+'px'; sh.style.height=(h-tabH)+'px'; cw=w-sw; $('#top').style.right=sw+'px'; $('#fsLink').style.right=(sw+10)+'px'; }
+  else { const hs=sheetState==='min'?150:sheetState==='max'?Math.max(200,h-tabH-110):Math.round((h-tabH)*0.47); sh.style.width=''; sh.style.height=hs+'px'; ch=h-tabH-hs+18; }
+  cw=Math.max(cw,100); ch=Math.max(ch,120);
+  canvas.style.width=cw+'px'; canvas.style.height=ch+'px';
+  renderer.setSize(cw,ch,false); camera.aspect=cw/ch; camera.fov=cw/ch<1?50:40; camera.updateProjectionMatrix();
+  if(mode==='muestra') showCamFor(muView);
+}
+window.addEventListener('resize',resize); window.addEventListener('orientationchange',()=>setTimeout(resize,250));
+
+/* ---------------- bucle ---------------- */
+const tmpV=V(0,0,0), blue=new THREE.Color(0x3d8bff);
+let prev=performance.now(), clock=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  if(document.hidden){ prev=now; return; }
+  let dtR=Math.min(0.05,(now-prev)/1000); prev=now; clock+=dtR;
+  const spd=slow?0.3:1; const dt=dtR*spd;
+
+  // inactividad
+  const idle=now-lastTouch;
+
+  // intro
+  let introActive=false;
+  if(started && introT>=0){ introT+=dtR; if(introT>3.2){ introT=-2; } else introActive=true; }
+
+  // avance del ciclo
+  if(started && !introActive){
+    if(mode==='run'){ ct+=dt; if(ct>=T) ct-=T; }
+    else if(mode==='step'&&route==='ciclo'&&stepPlay){ ct=Math.min(ct+dt,stepPlay.to); }
+    else if(mode==='ajustar'&&ajPlaying){
+      ct+=dt*1.25;
+      if(outcome==='crack' && ct>S[6]+CYCLE[6].d*0.5){ ct=S[6]+CYCLE[6].d*0.5; ajPlaying=false; showResult(); highlight=new Set(['cavidad','medalla']); }
+      else if(ct>=T-0.001){ ct=T-0.001; ajPlaying=false; presentGoal=1; showResult(); }
+    }
+    if(mode==='step'&&route==='montaje'){ mT=Math.min(1,mT+dt/mDur); }
+  }
+  // reproducir todo
+  if(mode==='step'&&playAll&&stepDone()){
+    playAllWait+=dtR;
+    if(playAllWait>1.6){ playAllWait=0; const n=route==='ciclo'?CYCLE.length:MONT.length; if(rstep<n-1) goStep(rstep+1); else { playAll=false; updPlayAll(); } }
+  }
+
+  // estado del ciclo
+  let s;
+  if(mode==='step'&&route==='montaje'){ s=cyc(0.0001); s.pellet=-1; s.fill=0; s.mini=0; s.noz=0; }
+  else s=cyc(ct);
+  if(!started){ s=cyc(0.0001); s.pellet=-1; }
+
+  // montaje interpolado
+  if(mode==='step'&&route==='montaje'){
+    const k=sm(mT); for(const n in mCur) mCur[n]=lerp(mFrom[n],mTo[n],k);
+  } else { for(const n in mCur) mCur[n]=0; mCur.open=s.open; }
+  const openV=(mode==='step'&&route==='montaje')?mCur.open:s.open;
+
+  // factores
+  E=lerp(E,explodeOn?1:0,1-Math.pow(0.02,dtR));
+  cutC=lerp(cutC,cutOn?0:60,1-Math.pow(0.03,dtR));
+  if(!cutOn&&cutC>59) cutC=200;
+  cutPlane.constant=cutC;
+
+  // posiciones de piezas
+  pieces.forEach(p=>{
+    p.anim.set(0,0,0);
+    if(p.moving) p.anim.x+=openV*OPEN;
+  });
+  emboloP.anim.x+=s.xp-XR;
+  // montaje: base fuera, inserto fuera, tornillos fuera, alzas fuera, puerta
+  if(mode==='step'&&route==='montaje'){
+    const bo=V(0,0,17).multiplyScalar(mCur.base);
+    [baseA,cavP,volP,tornP].forEach(p=>p.anim.add(bo));
+    const io=V(-4,2.5,0).multiplyScalar(mCur.ins);
+    [cavP,volP,tornP].forEach(p=>p.anim.add(io));
+    tornP.anim.add(V(-3.5,0,0).multiplyScalar(mCur.scr));
+    alzas.forEach(p=>p.anim.y+=mCur.alz*7);
+    puertaP.anim.y+=mCur.door*22;
+    screws.forEach((g,k)=>{ g.rotation.x=mCur.scr*3+ (mCur.spin*Math.PI*4*(k===0?1:1)); });
+  } else {
+    screws.forEach(g=>g.rotation.x=0);
+  }
+  // intro: llegada volando
+  const it=introActive?introT:(started?99:-1);
+  const inShow=mode==='muestra';
+  showG.visible=inShow;
+  if(inShow){ sampleG.rotation.y=Math.sin(clock*0.5)*0.35; insA.rotation.y=Math.sin(clock*0.45+1)*0.3; insB.rotation.y=Math.sin(clock*0.45+2)*0.3; }
+  pieces.forEach(p=>{
+    p.g.visible=!inShow;
+    const f=started?(1-eo((it-p.delay)/1.25)):1;
+    p.g.position.copy(p.base).add(p.anim).addScaledVector(p.explode,E).addScaledVector(p.scatter,f);
+  });
+
+  // resorte y émbolo
+  const carrier=s.xp-13; springMesh.scale.x=Math.max(1.2,(carrier-0.5)-(-45.4));
+  // columna de material en el barril
+  const x0=s.xp+0.6, x1=-10.05; meltCol.position.x=x0; meltCol.scale.x=Math.max(0.01,x1-x0);
+  const ht=s.heat; meltMat.color.setRGB(lerp(0.965,1,ht),lerp(0.9,0.62,ht),lerp(0.55,0.08,ht));
+  meltMat.emissiveIntensity=0.65*ht;
+  miniMelt.scale.x=Math.max(0.001,s.mini*4); miniMelt.visible=s.mini>0.01;
+  nozMelt.scale.x=Math.max(0.001,s.noz*3.5); nozMelt.visible=s.noz>0.01;
+  sprueMelt.scale.x=Math.max(0.001,s.sprue*2.54); sprueMelt.visible=s.sprue>0.01;
+  heaterMats.forEach(m=>{ if(!highlight.has('barril')&&selected!=='barril') m.emissiveIntensity=s.glow*0.9; });
+  levers.forEach(l=>l.rotation.y=s.valve*Math.PI/2);
+  // tornillo de bolas
+  const sp=s.spin*dt*14; screwRot.rotation.x+=sp; sprBig.rotation.x+=sp; sprSmall.rotation.x+=sp*2;
+  // gránulos que caen
+  {
+    const mtx=new THREE.Matrix4(); const show=s.pellet>=0;
+    for(let i=0;i<12;i++){
+      const t=show?clamp(s.pellet*1.7-i*0.06):0;
+      const vis=show&&t>0&&t<1;
+      const y=lerp(4.4,0.4,t*t), x=-24+Math.sin(i*2.1)*0.5, z=Math.cos(i*1.7)*0.5;
+      mtx.makeScale(vis?1:0.0001,vis?1:0.0001,vis?1:0.0001); mtx.setPosition(x,y,z); pelletFall.setMatrixAt(i,mtx);
+    }
+    pelletFall.instanceMatrix.needsUpdate=true;
+  }
+
+  // medalla
+  let fill=s.fill*1, hasMedal=s.fill>0.001, crackOn=false, ejectF=s.eject, medStuck=false;
+  if(mode==='step'&&route==='montaje') hasMedal=false;
+  if(mode==='ajustar'){
+    if(outcome==='crack'){ crackOn=s.i>4||(s.i===4&&s.p>0.6); medStuck=true; ejectF=0; }
+  }
+  cracks.visible=crackOn;
+  if(medStuck&&crackOn) highlight=new Set(['cavidad']);
+  holePlug.visible=!medVariant.hole;
+  medCracks.visible=!!medVariant.crack;
+  const blurNow=medVariant.blur&&(mode!=='ajustar'||s.i>=6||!ajPlaying);
+  medLetters.scale.x=blurNow?0.28:1;
+  // pose
+  const inPresent=presentGoal>0;
+  presentF=lerp(presentF,inPresent?1:0,1-Math.pow(0.04,dtR));
+  if(mode==='step'&&route==='inspeccion'){ hasMedal=true; fill=1; }
+  medG.position.set(0,0,0); medG.rotation.set(0,0,0); medG.scale.set(1,Math.max(0.001,fill),Math.max(0.001,fill));
+  // caída en la extracción (modo normal)
+  let opa=1;
+  if(ejectF>0 && presentF<0.02){
+    const e=ejectF; medG.position.set(-1.2*e, -14*e*e, 1.5*e); medG.rotation.set(e*2.2,0,e*0.8); opa=1-clamp((e-0.7)/0.3);
+  }
+  if(presentF>0.001){
+    // mezcla hacia la pose de exhibición (en coordenadas del grupo de la pieza)
+    const pg=medP.g.position; const sc0=2.4; const tgt=V(-2,2.5-GY*sc0,8).sub(pg);
+    medG.position.lerp(tgt,sm(presentF));
+    const sc=lerp(1,sc0,sm(presentF)); medG.scale.multiplyScalar(sc);
+    medG.rotation.set(Math.sin(clock*0.7)*0.08*presentF, lerp(0,-Math.PI/2,sm(presentF))+Math.sin(clock*0.5)*0.25*presentF,0);
+    opa=1;
+  }
+  medP.g.visible=hasMedal&&opa>0.01&&!inShow;
+  const tp=s.temp; medMats.forEach(m=>{ m.color.copy(COLD).lerp(HOT,tp); m.emissive.copy(HOTE).multiplyScalar(tp); m.emissiveIntensity=tp*0.85; m.opacity=opa; });
+  // corte parcial (pieza incompleta)
+  medG.updateMatrixWorld(true);
+  if(medVariant.fill<1){ tmpV.set(0.3,-2.3,0); medG.localToWorld(tmpV); fillPlane.constant=-tmpV.y; } else fillPlane.constant=1000;
+
+  // alineación (montaje)
+  const al=(mode==='step'&&route==='montaje')?mCur.align:0;
+  alignMat.opacity=al*(0.6+0.4*Math.sin(clock*5));
+  ringA.position.set(-0.05,0,0).add(cierreP.g.position);
+  ringB.position.copy(cavP.g.position).add(V(-0.05,0,0));
+  const xr=(mode==='step'&&route==='montaje'&&rstep===2)?1:0;
+  xRings.forEach((r,k)=>{ const yz=k===0?[4.445,2.54]:[-4.445,-2.54]; r.position.set(-0.05,yz[0],yz[1]).add(cavP.g.position); r.material.opacity=xr*(0.55+0.45*Math.sin(clock*6)); r.visible=xr>0; });
+
+  // resaltado
+  if(mode==='run'&&started&&!introActive){ highlight=new Set(CYCLE[s.i].hl); }
+  const pulse=0.5+0.5*Math.sin(clock*4.2);
+  for(const id in parts){
+    const on=highlight.has(id)||selected===id; const h=on?(selected===id?0.55:0.25+0.3*pulse):0;
+    if(id==='medalla') continue;
+    parts[id].mats.forEach(m=>{ if(!m.userData.e0) return; if(heaterMats.indexOf(m)>=0&&!on){ m.emissive.copy(m.userData.e0); return; }
+      m.emissive.copy(m.userData.e0).lerp(blue,h>0?1:0); m.emissiveIntensity=h>0?h:m.userData.i0; });
+  }
+  partMat.opacity=highlight.has('particion')||selected==='particion'?0.6+0.4*pulse:0.35;
+
+  // cámara
+  if(started&&idle>9000&&mode==='run'&&ptrs.size===0) camGoal.th+=dtR*0.09;
+  updCam(dtR);
+
+  renderer.render(scene,camera);
+
+  // etiquetas
+  const showAll=false; let nLab=0;
+  const W=canvas.clientWidth,H=canvas.clientHeight;
+  for(const id in parts){
+    const p=parts[id]; const el=p.el;
+    const want=started&&!introActive&&!inShow&&nLab<6&&(showAll||(mode!=='run'&&highlight.has(id))||selected===id);
+    if(!want){ if(el.classList.contains('show')) el.classList.remove('show'); continue; }
+    if(id==='medalla'){ if(!medP.g.visible){ el.classList.remove('show'); continue; } tmpV.set(0.3,GY,0); medG.localToWorld(tmpV); }
+    else { tmpV.copy(p.anchor).add(p.pieces[0].g.position); }
+    if(cutC<30) tmpV.z=Math.min(tmpV.z,cutC);
+    tmpV.project(camera);
+    if(tmpV.z>1||tmpV.x<-1.1||tmpV.x>1.1||tmpV.y<-1.1||tmpV.y>1.1){ el.classList.remove('show'); continue; }
+    const x=(tmpV.x*0.5+0.5)*W, y=(-tmpV.y*0.5+0.5)*H;
+    el.style.transform='translate('+(x|0)+'px,'+(y|0)+'px) translate(-50%,-100%)';
+    el.classList.add('show'); nLab++; el.classList.toggle('hl',highlight.has(id)||selected===id);
+  }
+
+  refreshCard(); syncTabs();
+}
+
+/* arranque */
+resize(); updSliders(); drawScreen(); scatterAll(); Object.assign(cam,CAM.home); cam.r=125; camTo('home'); updSpeed();
+setCard('Ciclo de inyección',1,CYCLE[0].t,CYCLE[0].p,CYCLE.length,0);
+if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(()=>{ drawScreen(); }); }
+requestAnimationFrame(frame);
+}
+if(window.THREE) __main();
+else { const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'; s.onload=__main; s.onerror=()=>{ document.getElementById('err').hidden=false; }; document.head.appendChild(s); }
+</script>
+</body>
+</html>
