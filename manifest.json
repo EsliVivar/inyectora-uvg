@@ -1,6 +1,6 @@
 {
- "name": "PhoneV · Inyectora interactiva",
- "short_name": "Inyectora",
+ "name": "Inyectora Interactiva",
+ "short_name": "Inyectora Interactiva",
  "start_url": "./index.html",
  "display": "fullscreen",
  "orientation": "any",

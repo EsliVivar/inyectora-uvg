@@ -1,4 +1,4 @@
-# Inyectora interactiva · PhoneV
+# Inyectora Interactiva
 
 Modelo interactivo del moldeo por inyección con un molde híbrido aluminio–resina, preparado para teléfono.
 
